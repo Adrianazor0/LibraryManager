@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import Book from '../models/Libro';
+import Book from '../models/Book';
 
 export const registerBook = async (req: Request, res: Response) => {
     try {

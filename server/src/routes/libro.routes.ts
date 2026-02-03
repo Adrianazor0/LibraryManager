@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { registerBook, getCatalog } from '../controllers/libro.controller';
+import { registerBook, getCatalog } from '../controllers/book.controller';
 import { verifyToken } from '../middlewares/auth.middleware';
 import { isAdmin } from '../middlewares/role.middleware';
 

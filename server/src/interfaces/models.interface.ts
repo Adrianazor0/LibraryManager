@@ -1,3 +1,5 @@
+import { Types } from 'mongoose';
+
 export interface IBook {
     title: string;
     author: string;
@@ -9,11 +11,11 @@ export interface IBook {
 }
 
 export interface IBorrow {
-    BookId: string;
-    userId: string;
+    bookId: Types.ObjectId;
+    userId: Types.ObjectId;
     departureDate: Date;
     dueDate: Date;
-    state: 'pendiente' | 'devuelto' | 'atrasado';
+    status: 'pendiente' | 'devuelto' | 'atrasado';
 }
 
 export interface IUser {
