@@ -1,9 +1,11 @@
 import { Router } from 'express';
-import { registrarLibro, obtenerCatalogo } from '../controllers/libro.controller';
+import { registerBook, getCatalog } from '../controllers/libro.controller';
+import { verifyToken } from '../middlewares/auth.middleware';
+import { isAdmin } from '../middlewares/role.middleware';
 
 const router = Router();
 
-router.post('/api/registrar', registrarLibro);
-router.get('/api/catalogo', obtenerCatalogo); 
+router.get('/catalogo', verifyToken, getCatalog);
+router.post('/registrar', [verifyToken, isAdmin], registerBook);
 
 export default router;
