@@ -4,12 +4,12 @@ import { IBorrow } from '../interfaces/models.interface';
 const borrowSchema = new Schema<IBorrow>({
     bookId: { 
         type: Schema.Types.ObjectId, 
-        ref: 'Libro', 
+        ref: 'Book', 
         required: true 
     },
     userId: { 
         type: Schema.Types.ObjectId, 
-        ref: 'Usuario', 
+        ref: 'User', 
         required: true 
     },
     departureDate: { 
