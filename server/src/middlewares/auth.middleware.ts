@@ -10,7 +10,7 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_para_desarrollo');
-        req.user = decoded; 
+        (req as any).user = decoded;
         next(); 
     } catch (error) {
         res.status(401).json({ msg: "Token no válido" });

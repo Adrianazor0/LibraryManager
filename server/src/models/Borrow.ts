@@ -22,7 +22,7 @@ const borrowSchema = new Schema<IBorrow>({
     },
     status: { 
         type: String, 
-        enum: ['pendiente', 'devuelto', 'atrasado'], 
+        enum: ['pendiente', 'devuelto', 'atrasado', 'prestado'], 
         default: 'pendiente' 
     }
 }, { 

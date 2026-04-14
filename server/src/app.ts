@@ -6,23 +6,35 @@ import { connectDB } from './config/db';
 import authRoutes from './routes/auth.routes';
 import bookRoutes from './routes/book.routes';
 import borrowRoutes from './routes/borrow.routes';
+import userRoutes from './routes/user.routes';
+import dashboardRoutes from './routes/dashboard.routes';
+import report from './routes/report.routes';
+
 
 dotenv.config();
 const app: Application = express();
 connectDB();
 
-app.use(cors()); 
+// Permite todas las conexiones temporalmente para pruebas
+app.use(cors({
+  origin: '*', 
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(morgan('dev')); 
 app.use(express.json()); 
 
 app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api/borrows', borrowRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/reports', report);
 
 const PORT = process.env.PORT || 4000;
 
 app.listen(PORT, () => {
-    console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
+  console.log(`Servidor corriendo en puerto ${PORT} y accesible en toda la red local`);
 });
 
 export default app;

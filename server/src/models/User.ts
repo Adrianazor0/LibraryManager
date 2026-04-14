@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { IUser } from '../interfaces/models.interface';
 
 const userSchema = new Schema<IUser>({
-    enrollmentID: { 
+    enrollmentId: { 
         type: String, 
         required: [true, 'La matrícula es obligatoria'], 
         unique: true,

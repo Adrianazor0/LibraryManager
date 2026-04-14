@@ -23,15 +23,15 @@ export const signUp = async (req: Request, res: Response) => {
         await newUser.save();
         res.status(201).json({ msg: "Usuario creado con éxito" });
     } catch (error) {
-        res.status(500).json({ msg: "Error al registrar usuario" });
+        res.status(500).json({ msg: "Error al registrar usuario", error });
     }
 };
 
 export const signIn = async (req: Request, res: Response) => {
-    const { enrollmentID, password } = req.body;
+    const { enrollmentId, password } = req.body;
 
     try {
-        const user = await User.findOne({ enrollmentID });
+        const user = await User.findOne({ enrollmentId });
         if (!user) {
             return res.status(404).json({ msg: "Usuario no encontrado" });
         }
@@ -43,8 +43,8 @@ export const signIn = async (req: Request, res: Response) => {
 
         const payload = {
             id: user._id,
-            rol: user.role,
-            enrollmentID: user.enrollmentID
+            role: user.role,
+            enrollmentId: user.enrollmentId
         };
 
         const token = jwt.sign(
@@ -57,8 +57,8 @@ export const signIn = async (req: Request, res: Response) => {
             token,
             usuario: {
                 nombre: user.name,
-                rol: user.role,
-                enrollmentID: user.enrollmentID
+                role: user.role,
+                enrollmentId: user.enrollmentId
             }
         });
 
