@@ -27,8 +27,10 @@ export interface IBook {
 }
 
 export interface IBorrow {
+    _id?: string;
     bookId: Types.ObjectId;
     userId: Types.ObjectId;
+    approvedBy?: Types.ObjectId;
     departureDate: Date;
     dueDate: Date;
     status: 'pendiente' | 'devuelto' | 'atrasado' | 'prestado';
@@ -41,7 +43,7 @@ export interface IUser {
     lastname: string;
     email: string;
     password?: string;
-    role: 'admin' | 'estudiante' | 'docente'; 
+    role: 'admin' | 'estudiante' | 'docente' | 'bibliotecario'; 
     status: 'activo' | 'suspendido';
     profilePhoto?: string;
     qrAccess?: string;
@@ -55,4 +57,15 @@ export interface IActivityLog {
     book?: Types.ObjectId; 
     timestamp: Date;
     details?: string; 
-}
+    }
+
+    export interface ILibraryPolicy {
+    _id?: string;
+    section: 'Biblioteca General' | 'Hemeroteca' | 'Referencia' | 'Juvenil/Infantil';
+    canBorrow: boolean;
+    rules: {
+        role: 'estudiante' | 'docente' | 'bibliotecario' | 'admin';
+        maxBooks: number;
+        loanDays: number;
+    }[];
+    }

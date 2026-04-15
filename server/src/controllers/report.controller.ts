@@ -22,13 +22,18 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     // 3. Resumen general
     const totalBooks = await Book.countDocuments();
     const activeLoans = await Borrow.countDocuments({ status: 'prestado' });
+    const overdueBooks = await Borrow.countDocuments({ 
+      status: { $in: ['prestado', 'atrasado'] }, 
+      dueDate: { $lt: new Date() } 
+    });
 
     res.json({
       topBooks,
       borrowStatus,
       summary: {
         totalBooks,
-        activeLoans
+        activeLoans,
+        overdueBooks
       }
     });
   } catch (error) {

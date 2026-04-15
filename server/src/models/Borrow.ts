@@ -12,6 +12,10 @@ const borrowSchema = new Schema<IBorrow>({
         ref: 'User', 
         required: true 
     },
+    approvedBy: { 
+        type: Schema.Types.ObjectId, 
+        ref: 'User'
+    },
     departureDate: { 
         type: Date, 
         default: Date.now 
