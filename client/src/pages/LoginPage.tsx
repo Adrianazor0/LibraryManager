@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -7,7 +7,7 @@ const LoginPage = () => {
   const [enrollmentId, setEnrollmentId] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const setAuth = useAuthStore((state) => state.setAuth);
   const navigate = useNavigate();
 
@@ -17,11 +17,10 @@ const LoginPage = () => {
 
     try {
       // Petición al endpoint que ya probamos en el backend
-      const response = await axios.post('http://localhost:4000/api/auth/signin', {
+      const response = await api.post('/auth/signin', {
         enrollmentId,
         password
       });
-
       const { token, usuario } = response.data;
 
       // Centralizamos los datos capturando posibles variaciones de nombres

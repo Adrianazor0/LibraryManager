@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useCirculation } from '../hooks/useCirculation';
-import { CheckCircleIcon, AlertTriangleIcon, SearchIcon, CalendarIcon } from 'lucide-react';
+import { CheckCircleIcon, AlertTriangleIcon, CalendarIcon } from 'lucide-react';
 
 const CirculationsPage = () => {
   const { activeLoans, loading, fetchActiveLoans, returnBook } = useCirculation();

@@ -1,4 +1,3 @@
-import React from 'react';
 import { useDashboard } from '../hooks/useDashboard';
 import { 
   BookIcon, 
@@ -7,8 +6,7 @@ import {
   AlertCircleIcon, 
   ClockIcon,
   PlusCircleIcon,
-  InboxIcon,
-  CheckCircleIcon
+  InboxIcon
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';

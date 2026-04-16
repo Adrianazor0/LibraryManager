@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useReports } from '../hooks/useReports';
 import { 
   BarChart3Icon, HistoryIcon, BookCheckIcon, 
-  ArrowUpRightIcon, PrinterIcon, SearchIcon,
-  CalendarIcon, AlertCircleIcon, FileTextIcon
+  ArrowUpRightIcon, AlertCircleIcon, FileTextIcon
 } from 'lucide-react';
 
 const ReportsPage = () => {

@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Book, useBooks } from '../hooks/useBooks';
 import {
   SearchIcon, MapPinIcon, Trash2Icon,
   Edit3Icon, PlusIcon, XIcon, BookOpenIcon, SaveIcon,
-  FilterIcon, LayersIcon, ChevronDownIcon,
+  FilterIcon, ChevronDownIcon,
   BarcodeIcon
 } from 'lucide-react';
 

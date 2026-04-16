@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { XIcon, BarcodeIcon, SaveIcon, MapPinIcon, BookOpenIcon, LayersIcon } from 'lucide-react';
+import { XIcon, SaveIcon, MapPinIcon, BookOpenIcon, LayersIcon } from 'lucide-react';
 import api from '../api/axios';
 
 interface Props {
