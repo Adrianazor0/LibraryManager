@@ -24,12 +24,6 @@ const bookSchema = new Schema<IBook>({
     section: { 
     type: String, 
     required: true,
-    enum: [
-      'Biblioteca General', 
-      'Hemeroteca', 
-      'Referencia', 
-      'Juvenil/Infantil'
-    ],
     default: 'Biblioteca General'
   }
 }, { timestamps: true });

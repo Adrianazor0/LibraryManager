@@ -5,8 +5,7 @@ const libraryPolicySchema = new Schema<ILibraryPolicy>({
     section: {
         type: String,
         required: true,
-        unique: true,
-        enum: ['Biblioteca General', 'Hemeroteca', 'Referencia', 'Juvenil/Infantil']
+        unique: true
     },
     canBorrow: { type: Boolean, default: true },
     rules: [{

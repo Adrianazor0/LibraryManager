@@ -23,7 +23,7 @@ export interface IBook {
     };
     createdAt?: Date;
     updatedAt?: Date;
-    section: 'Biblioteca General' | 'Hemeroteca' | 'Referencia' | 'Juvenil/Infantil';
+    section: string;
 }
 
 export interface IBorrow {
@@ -61,7 +61,7 @@ export interface IActivityLog {
 
     export interface ILibraryPolicy {
     _id?: string;
-    section: 'Biblioteca General' | 'Hemeroteca' | 'Referencia' | 'Juvenil/Infantil';
+    section: string;
     canBorrow: boolean;
     rules: {
         role: 'estudiante' | 'docente' | 'bibliotecario' | 'admin';

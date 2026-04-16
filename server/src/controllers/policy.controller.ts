@@ -21,3 +21,32 @@ export const updatePolicy = async (req: Request, res: Response) => {
         res.status(500).json({ msg: "Error al actualizar política", error: error.message });
     }
 };
+
+export const createPolicy = async (req: Request, res: Response) => {
+    try {
+        const { section } = req.body;
+        
+        // Verificar si ya existe
+        const existing = await LibraryPolicy.findOne({ section });
+        if (existing) {
+            return res.status(400).json({ msg: "Esta sección ya existe" });
+        }
+
+        // Crear con reglas por defecto si no se envían
+        const newPolicy = new LibraryPolicy({
+            section,
+            canBorrow: req.body.canBorrow ?? true,
+            rules: req.body.rules || [
+                { role: 'estudiante', maxBooks: 1, loanDays: 1 },
+                { role: 'docente', maxBooks: 1, loanDays: 1 },
+                { role: 'bibliotecario', maxBooks: 1, loanDays: 1 },
+                { role: 'admin', maxBooks: 1, loanDays: 1 }
+            ]
+        });
+
+        await newPolicy.save();
+        res.status(201).json(newPolicy);
+    } catch (error: any) {
+        res.status(500).json({ msg: "Error al crear la sección", error: error.message });
+    }
+};
