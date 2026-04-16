@@ -54,11 +54,15 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', report);
 app.use('/api/policies', policyRoutes);
 
+// Catch-all route for any undefined routes
+app.use((req, res) => {
+  res.status(404).json({ msg: `Ruta no encontrada: ${req.method} ${req.url}` });
+});
+
 const PORT = Number(process.env.PORT) || 8080;
 
-// Escuchamos en 0.0.0.0 (importante para Docker)
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Servidor escuchando en el puerto ${PORT}`);
+    console.log(`>>> SERVER LIVE ON PORT ${PORT} (0.0.0.0) <<<`);
 });
 
 export default app;
