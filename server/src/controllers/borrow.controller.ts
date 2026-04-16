@@ -35,7 +35,7 @@ export const createBorrow = async (req: AuthRequest, res: Response) => {
             return res.status(403).json({ msg: `Los libros de la sección "${book.section}" no están permitidos para préstamo físico.` });
         }
 
-        const roleRule = policy.rules.find(r => r.role === user.role);
+        const roleRule = policy.rules.find((r: any) => r.role === user.role);
         if (!roleRule) return res.status(403).json({ msg: `El rol ${user.role} no tiene reglas definidas para esta sección.` });
 
         if (book.stockAvailable <= 0) {
@@ -188,7 +188,7 @@ export const requestBorrow = async (req: Request, res: Response) => {
             return res.status(403).json({ msg: `Los libros de la sección "${book.section}" solo pueden consultarse en sala.` });
         }
 
-        const roleRule = policy.rules.find(r => r.role === userRole);
+        const roleRule = policy.rules.find((r: any) => r.role === userRole);
         if (!roleRule) return res.status(403).json({ msg: `Tu rol no tiene permisos para solicitar libros de esta sección.` });
 
         const requestedDays = Number(daysBorrowed);

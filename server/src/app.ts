@@ -56,8 +56,9 @@ app.use('/api/policies', policyRoutes);
 
 const PORT = Number(process.env.PORT) || 8080;
 
+// Escuchamos en 0.0.0.0 (importante para Docker)
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Servidor corriendo en el puerto ${PORT}`);
+    console.log(`Servidor escuchando en el puerto ${PORT}`);
 });
 
 export default app;
