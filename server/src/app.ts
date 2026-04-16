@@ -38,10 +38,24 @@ app.use(cors({
 // Manejo explícito de preflight
 app.options('*', cors());
 
-connectDB().then(() => {
-  console.log("Conectado a MongoDB");
-  seedPolicies();
-});
+// Inicialización de DB y Servidor
+const startServer = async () => {
+  const PORT = Number(process.env.PORT) || 8080;
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`>>> SERVER LIVE ON PORT ${PORT} (0.0.0.0) <<<`);
+  });
+
+  try {
+    await connectDB();
+    console.log("Conectado a MongoDB");
+    await seedPolicies();
+    console.log("Políticas verificadas/inicializadas");
+  } catch (error) {
+    console.error("Error durante la inicialización:", error);
+  }
+};
+
+startServer();
 
 app.use(morgan('dev')); 
 app.use(express.json()); 
@@ -57,12 +71,6 @@ app.use('/api/policies', policyRoutes);
 // Catch-all route for any undefined routes
 app.use((req, res) => {
   res.status(404).json({ msg: `Ruta no encontrada: ${req.method} ${req.url}` });
-});
-
-const PORT = Number(process.env.PORT) || 8080;
-
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`>>> SERVER LIVE ON PORT ${PORT} (0.0.0.0) <<<`);
 });
 
 export default app;
