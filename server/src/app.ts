@@ -16,19 +16,25 @@ import { seedPolicies } from './models/LibraryPolicy';
 dotenv.config();
 const app: Application = express();
 
-// Manual CORS fix
+// DEBUG: Log para ver qué llega al servidor
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-auth-token');
-  
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
+  console.log(`${req.method} ${req.url} - Origin: ${req.headers.origin}`);
   next();
 });
 
+// Configuración de CORS con la librería oficial (más segura)
+app.use(cors({
+  origin: true, // Permite cualquier origen que haga la petición
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
+  credentials: true
+}));
+
+// Manejo explícito de preflight
+app.options('*', cors());
+
 connectDB().then(() => {
+  console.log("Conectado a MongoDB");
   seedPolicies();
 });
 
