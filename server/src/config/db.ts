@@ -2,10 +2,15 @@ import mongoose from 'mongoose';
 
 export const connectDB = async () => {
     try {
-        const conn = await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/biblioteca_urena');
+        const uri = process.env.MONGO_URI;
+        if (!uri) {
+            console.error("CRITICAL: MONGO_URI is missing in process.env!");
+            return; // Don't crash, let the health check pass
+        }
+        const conn = await mongoose.connect(uri);
         console.log(`MongoDB Conectado: ${conn.connection.host}`);
     } catch (error) {
-        console.error(`Error de conexión: ${error}`);
-        process.exit(1);
+        console.error(`Error de conexión a MongoDB: ${error}`);
+        // Let the server keep running for Cloud Run's health check
     }
 };
