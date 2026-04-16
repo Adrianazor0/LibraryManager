@@ -61,22 +61,22 @@ export const createBorrow = async (req: AuthRequest, res: Response) => {
         let departureDate: Date;
         if (req.body.startDate) {
             const [y, m, d] = req.body.startDate.split('-').map(Number);
-            departureDate = new Date(y, m - 1, d, 0, 0, 0, 0); // Local del servidor
+            departureDate = new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0)); 
         } else {
             departureDate = new Date();
-            departureDate.setHours(0, 0, 0, 0);
+            departureDate.setUTCHours(0, 0, 0, 0);
         }
         
-        // 'today' para validación también en local del servidor
+        // 'today' para validación en UTC
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        today.setUTCHours(0, 0, 0, 0);
 
         if (departureDate < today) {
             return res.status(400).json({ msg: "No puedes registrar un préstamo con una fecha de inicio en el pasado." });
         }
 
         const dueDate = new Date(departureDate);
-        dueDate.setDate(dueDate.getDate() + roleRule.loanDays);
+        dueDate.setUTCDate(dueDate.getUTCDate() + roleRule.loanDays);
 
         const newBorrow = new Borrow({
             bookId: book._id,
@@ -92,9 +92,9 @@ export const createBorrow = async (req: AuthRequest, res: Response) => {
 
         await logActivity(
             'PRESTAMO',
-            req.user?._id || userId, 
+            req.user?.id || req.user?._id || userId, 
             bookId,
-            `Préstamo directo de ${book.section} a ${user.name} para devolver el ${dueDate.toLocaleDateString()}`
+            `Préstamo directo de ${book.section} a ${user.name} para devolver el ${dueDate.toISOString().split('T')[0]}`
         );
 
         res.status(201).json({
@@ -120,8 +120,9 @@ export const getActiveBorrows = async (req: Request, res: Response) => {
         .lean();
 
         // Mapeo dinámico para que el dashboard vea el estado real de atraso
+        const today = new Date();
         const processedBorrows = borrows.map(item => {
-            if (item.status === 'prestado' && new Date() > new Date(item.dueDate)) {
+            if (item.status === 'prestado' && today > new Date(item.dueDate)) {
                 return { ...item, status: 'atrasado' };
             }
             return item;
@@ -149,9 +150,9 @@ export const returnBook = async (req: AuthRequest, res: Response) => {
         // 2. Usamos una validación más limpia para el logActivity
         await logActivity(
             'DEVOLUCION',
-            req.user?._id || borrow.userId?.toString() || 'SYSTEM',
+            req.user?.id || req.user?._id || borrow.userId?.toString() || 'SYSTEM',
             borrow.bookId?._id?.toString() || id, // Aquí id ya es seguro como string
-            `Libro devuelto. Fecha compromiso era: ${borrow.dueDate.toLocaleDateString()}`
+            `Libro devuelto. Fecha compromiso era: ${borrow.dueDate.toISOString().split('T')[0]}`
         );
 
         await Book.findByIdAndUpdate(borrow.bookId, {
@@ -184,8 +185,8 @@ export const getBorrowsHistory = async (req: Request, res: Response) => {
 
         if (startDate || endDate) {
             query.departureDate = {};
-            if (startDate) query.departureDate.$gte = new Date(startDate as string + 'T00:00:00');
-            if (endDate) query.departureDate.$lte = new Date(endDate as string + 'T23:59:59');
+            if (startDate) query.departureDate.$gte = new Date(startDate as string + 'T00:00:00.000Z');
+            if (endDate) query.departureDate.$lte = new Date(endDate as string + 'T23:59:59.999Z');
         }
 
         const history = await Borrow.find(query)
@@ -252,21 +253,21 @@ export const requestBorrow = async (req: Request, res: Response) => {
         let departureDate: Date;
         if (startDate) {
             const [y, m, d] = startDate.split('-').map(Number);
-            departureDate = new Date(y, m - 1, d, 0, 0, 0, 0); // Local del servidor
+            departureDate = new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0)); 
         } else {
             departureDate = new Date();
-            departureDate.setHours(0, 0, 0, 0);
+            departureDate.setUTCHours(0, 0, 0, 0);
         }
 
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        today.setUTCHours(0, 0, 0, 0);
 
         if (departureDate < today) {
             return res.status(400).json({ msg: "No puedes solicitar un préstamo para una fecha pasada." });
         }
 
         const dueDate = new Date(departureDate);
-        dueDate.setDate(dueDate.getDate() + requestedDays);
+        dueDate.setUTCDate(dueDate.getUTCDate() + requestedDays);
 
         const newBorrow = new Borrow({
             bookId,
@@ -282,7 +283,7 @@ export const requestBorrow = async (req: Request, res: Response) => {
             'PETICION DE PRESTAMO',
             userId,
             bookId,
-            `Solicitud de ${book.section} para el ${departureDate.toLocaleDateString()} por ${requestedDays} días.`
+            `Solicitud de ${book.section} para el ${departureDate.toISOString().split('T')[0]} por ${requestedDays} días.`
         );
 
         res.status(201).json({ msg: "Solicitud enviada con éxito", newBorrow });
@@ -322,11 +323,13 @@ export const approveBorrow = async (req: AuthRequest, res: Response) => {
 
         // --- CORRECCIÓN DE FECHAS EN APROBACIÓN ---
         if (dueDate) {
-            const [y, m, d] = dueDate.split('-').map(Number);
-            const requestedDate = new Date(y, m - 1, d, 23, 59, 59, 999); // Fin del día local
+            // Manejar tanto YYYY-MM-DD como ISO strings
+            const datePart = dueDate.split('T')[0];
+            const [y, m, d] = datePart.split('-').map(Number);
+            const requestedDate = new Date(Date.UTC(y, m - 1, d, 23, 59, 59, 999)); // Fin del día UTC
             
             const startDate = borrow.departureDate ? new Date(borrow.departureDate) : new Date();
-            startDate.setHours(0, 0, 0, 0);
+            startDate.setUTCHours(0, 0, 0, 0);
             
             if (requestedDate < startDate) {
                 return res.status(400).json({ msg: "La fecha de devolución no puede ser anterior a la fecha de inicio del préstamo." });
@@ -341,11 +344,14 @@ export const approveBorrow = async (req: AuthRequest, res: Response) => {
             const roleRule = policy?.rules.find(r => r.role === user.role);
             
             if (roleRule) {
-                const [y, m, d] = dueDate.split('-').map(Number);
-                const requestedDate = new Date(y, m - 1, d);
-                const startDate = borrow.departureDate ? new Date(borrow.departureDate) : new Date();
+                const datePart = dueDate.split('T')[0];
+                const [y, m, d] = datePart.split('-').map(Number);
+                const requestedDate = new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
                 
-                // Calcular diferencia en días
+                const startDate = borrow.departureDate ? new Date(borrow.departureDate) : new Date();
+                startDate.setUTCHours(0, 0, 0, 0);
+                
+                // Calcular diferencia en días (en UTC)
                 const diffTime = Math.abs(requestedDate.getTime() - startDate.getTime());
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
@@ -365,9 +371,9 @@ export const approveBorrow = async (req: AuthRequest, res: Response) => {
 
         await logActivity(
             'APROBACION_PRESTAMO',
-            req.user?._id || 'SYSTEM',
+            req.user?.id || req.user?._id || 'SYSTEM',
             book._id.toString(),
-            `Solicitud aprobada por ${req.user?.role}. Fecha entrega: ${borrow.dueDate.toLocaleDateString()}`
+            `Solicitud aprobada por ${req.user?.role}. Fecha entrega: ${borrow.dueDate.toISOString().split('T')[0]}`
         );
 
         res.json({ msg: "Préstamo aprobado", borrow });
