@@ -15,20 +15,14 @@ import { seedPolicies } from './models/LibraryPolicy';
 
 dotenv.config();
 const app: Application = express();
+
+// 1. CORS DEBE SER LO PRIMERO
+app.use(cors()); 
+app.options('*', cors()); 
+
 connectDB().then(() => {
   seedPolicies();
 });
-
-// Configuración de CORS más robusta para producción
-app.use(cors({
-  origin: ['https://capacitapp-481223.web.app', 'http://localhost:5173', 'http://localhost:4000'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
-  credentials: true
-}));
-
-// Responder explícitamente a las peticiones OPTIONS (Preflight)
-app.options('*', cors());
 
 app.use(morgan('dev')); 
 app.use(express.json()); 
