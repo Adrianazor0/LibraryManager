@@ -12,54 +12,31 @@ import report from './routes/report.routes';
 import policyRoutes from './routes/policy.routes';
 import { seedPolicies } from './models/LibraryPolicy';
 
-
+// Cargar variables de entorno lo antes posible
 dotenv.config();
+
 const app: Application = express();
+const PORT = process.env.PORT || 8080;
 
-// Health Check para probar en el navegador
-app.get('/', (req, res) => {
-  res.status(200).send('<h1>Biblioteca API - ONLINE</h1>');
-});
-
-// DEBUG: Log para ver qué llega al servidor
-app.use((req, res, next) => {
-  console.log(`[REQUEST] ${req.method} ${req.url} - Origin: ${req.headers.origin}`);
-  next();
-});
-
-// Configuración de CORS con la librería oficial (más segura)
+// Configuración de CORS
 app.use(cors({
-  origin: true, // Permite cualquier origen que haga la petición
+  origin: true, 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
   credentials: true
 }));
-
-// Manejo explícito de preflight
 app.options('*', cors());
 
-// Inicialización de DB y Servidor
-const startServer = async () => {
-  const PORT = Number(process.env.PORT) || 8080;
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`>>> SERVER LIVE ON PORT ${PORT} (0.0.0.0) <<<`);
-  });
-
-  try {
-    await connectDB();
-    console.log("Conectado a MongoDB");
-    await seedPolicies();
-    console.log("Políticas verificadas/inicializadas");
-  } catch (error) {
-    console.error("Error durante la inicialización:", error);
-  }
-};
-
-startServer();
-
+// Middleware básico
 app.use(morgan('dev')); 
 app.use(express.json()); 
 
+// Health Check para Cloud Run
+app.get('/', (req, res) => {
+  res.status(200).send('<h1>Biblioteca API - ONLINE</h1>');
+});
+
+// Rutas de la API
 app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api/borrows', borrowRoutes);
@@ -68,9 +45,29 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', report);
 app.use('/api/policies', policyRoutes);
 
-// Catch-all route for any undefined routes
+// Manejo de rutas no encontradas
 app.use((req, res) => {
   res.status(404).json({ msg: `Ruta no encontrada: ${req.method} ${req.url}` });
+});
+
+// Iniciar el servidor inmediatamente para pasar el health check de Cloud Run
+const server = app.listen(PORT, () => {
+    console.log(`>>> SERVER LIVE ON PORT ${PORT} <<<`);
+    
+    // Inicialización en segundo plano (DB y Semillas)
+    connectDB().then(() => {
+        console.log("Conectado a MongoDB");
+        return seedPolicies();
+    }).then(() => {
+        console.log("Políticas verificadas/inicializadas");
+    }).catch(error => {
+        console.error("Error durante la inicialización en segundo plano:", error);
+    });
+});
+
+// Manejo de errores del servidor
+server.on('error', (err) => {
+    console.error("Error crítico del servidor:", err);
 });
 
 export default app;
