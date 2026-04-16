@@ -56,10 +56,18 @@ export const createBorrow = async (req: AuthRequest, res: Response) => {
             });
         }
 
-        // Validación de fecha no pasada
-        const departureDate = req.body.startDate ? new Date(req.body.startDate + 'T00:00:00') : new Date();
-        departureDate.setHours(0, 0, 0, 0);
+        // --- CORRECCIÓN DE FECHAS ---
+        // Si viene YYYY-MM-DD, lo parseamos manualmente para evitar desfases de zona horaria
+        let departureDate: Date;
+        if (req.body.startDate) {
+            const [y, m, d] = req.body.startDate.split('-').map(Number);
+            departureDate = new Date(y, m - 1, d, 0, 0, 0, 0); // Local del servidor
+        } else {
+            departureDate = new Date();
+            departureDate.setHours(0, 0, 0, 0);
+        }
         
+        // 'today' para validación también en local del servidor
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -73,7 +81,7 @@ export const createBorrow = async (req: AuthRequest, res: Response) => {
         const newBorrow = new Borrow({
             bookId: book._id,
             userId: user._id,
-            approvedBy: (req as any).user?.id, // Guardar quién lo registró
+            approvedBy: (req as any).user?.id, 
             departureDate: departureDate,
             dueDate: dueDate,
             status: 'prestado' 
@@ -240,8 +248,15 @@ export const requestBorrow = async (req: Request, res: Response) => {
             });
         }
 
-        const departureDate = startDate ? new Date(startDate + 'T00:00:00') : new Date();
-        departureDate.setHours(0, 0, 0, 0);
+        // --- CORRECCIÓN DE FECHAS ---
+        let departureDate: Date;
+        if (startDate) {
+            const [y, m, d] = startDate.split('-').map(Number);
+            departureDate = new Date(y, m - 1, d, 0, 0, 0, 0); // Local del servidor
+        } else {
+            departureDate = new Date();
+            departureDate.setHours(0, 0, 0, 0);
+        }
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -305,15 +320,19 @@ export const approveBorrow = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({ msg: "No hay stock disponible" });
         }
 
-        // Validación: Fecha de devolución no puede ser antes de la fecha de inicio
+        // --- CORRECCIÓN DE FECHAS EN APROBACIÓN ---
         if (dueDate) {
-            const requestedDate = new Date(dueDate);
+            const [y, m, d] = dueDate.split('-').map(Number);
+            const requestedDate = new Date(y, m - 1, d, 23, 59, 59, 999); // Fin del día local
+            
             const startDate = borrow.departureDate ? new Date(borrow.departureDate) : new Date();
             startDate.setHours(0, 0, 0, 0);
             
             if (requestedDate < startDate) {
                 return res.status(400).json({ msg: "La fecha de devolución no puede ser anterior a la fecha de inicio del préstamo." });
             }
+            
+            borrow.dueDate = requestedDate;
         }
 
         // Lógica de restricción de fechas para Bibliotecarios
@@ -322,7 +341,8 @@ export const approveBorrow = async (req: AuthRequest, res: Response) => {
             const roleRule = policy?.rules.find(r => r.role === user.role);
             
             if (roleRule) {
-                const requestedDate = new Date(dueDate);
+                const [y, m, d] = dueDate.split('-').map(Number);
+                const requestedDate = new Date(y, m - 1, d);
                 const startDate = borrow.departureDate ? new Date(borrow.departureDate) : new Date();
                 
                 // Calcular diferencia en días
@@ -338,7 +358,6 @@ export const approveBorrow = async (req: AuthRequest, res: Response) => {
         }
 
         borrow.status = 'prestado';
-        if (dueDate) borrow.dueDate = new Date(dueDate);
         borrow.approvedBy = (req as any).user?.id;
         book.stockAvailable -= 1;
 
