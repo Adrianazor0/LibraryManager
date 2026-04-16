@@ -28,7 +28,18 @@ export const signUp = async (req: Request, res: Response) => {
 };
 
 export const signIn = async (req: Request, res: Response) => {
-    const { enrollmentId, password } = req.body;
+    let { enrollmentId, password } = req.body;
+
+    // Decodificar si la data viene ofuscada (Base64)
+    if (req.body.data) {
+        try {
+            const decodedData = JSON.parse(Buffer.from(req.body.data, 'base64').toString());
+            enrollmentId = decodedData.enrollmentId;
+            password = decodedData.password;
+        } catch (e) {
+            return res.status(400).json({ msg: "Formato de datos inválido" });
+        }
+    }
 
     try {
         const user = await User.findOne({ enrollmentId });
