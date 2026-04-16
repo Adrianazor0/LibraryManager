@@ -16,9 +16,14 @@ import { seedPolicies } from './models/LibraryPolicy';
 dotenv.config();
 const app: Application = express();
 
+// Health Check para probar en el navegador
+app.get('/', (req, res) => {
+  res.status(200).send('<h1>Biblioteca API - ONLINE</h1>');
+});
+
 // DEBUG: Log para ver qué llega al servidor
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url} - Origin: ${req.headers.origin}`);
+  console.log(`[REQUEST] ${req.method} ${req.url} - Origin: ${req.headers.origin}`);
   next();
 });
 
