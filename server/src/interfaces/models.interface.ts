@@ -44,7 +44,7 @@ export interface IUser {
     email: string;
     password?: string;
     role: 'admin' | 'estudiante' | 'docente' | 'bibliotecario'; 
-    status: 'activo' | 'suspendido';
+    status: 'activo' | 'suspendido' | 'eliminado';
     profilePhoto?: string;
     qrAccess?: string;
     createdAt?: Date;
