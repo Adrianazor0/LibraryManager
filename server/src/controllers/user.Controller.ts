@@ -5,18 +5,21 @@ import User from '../models/User';
 export const getUser = async (req: Request, res: Response) => {
   try {
     const { search } = req.query;
-    let filter = {};
+    // Por defecto, solo mostramos usuarios activos o suspendidos, no eliminados
+    let filter: any = { status: { $ne: 'eliminado' } };
 
     if (search) {
-      // Usamos un casting a string para evitar errores de tipo con regex
       const searchStr = String(search);
-      filter = {
-        $or: [
-          { name: { $regex: searchStr, $options: 'i' } },
-          { lastname: { $regex: searchStr, $options: 'i' } },
-          { enrollmentId: { $regex: searchStr, $options: 'i' } }
-        ]
-      };
+      filter.$and = [
+        { status: { $ne: 'eliminado' } },
+        {
+          $or: [
+            { name: { $regex: searchStr, $options: 'i' } },
+            { lastname: { $regex: searchStr, $options: 'i' } },
+            { enrollmentId: { $regex: searchStr, $options: 'i' } }
+          ]
+        }
+      ];
     }
 
     const users: IUser[] = await User.find(filter).limit(10);
@@ -73,16 +76,18 @@ export const deleteUser = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    // Podrías añadir una validación aquí: 
-    // No permitir que un usuario se borre a sí mismo si es el único admin
-    
-    const userDeleted = await User.findByIdAndDelete(id);
+    // Soft delete: Cambiamos el estado en lugar de borrar el documento
+    const userDeleted = await User.findByIdAndUpdate(
+      id, 
+      { $set: { status: 'eliminado' } },
+      { new: true }
+    );
 
     if (!userDeleted) {
       return res.status(404).json({ msg: "El usuario ya no existe" });
     }
 
-    res.json({ msg: "Usuario eliminado correctamente", id });
+    res.json({ msg: "Usuario deshabilitado correctamente", id });
   } catch (error) {
     res.status(500).json({ msg: "Error al eliminar usuario" });
   }

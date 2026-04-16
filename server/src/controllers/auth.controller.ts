@@ -36,6 +36,12 @@ export const signIn = async (req: Request, res: Response) => {
             return res.status(404).json({ msg: "Usuario no encontrado" });
         }
 
+        if (user.status !== 'activo') {
+            const reason = user.status === 'suspendido' ? "Tu cuenta ha sido suspendida." : 
+                           "Tu cuenta ha sido eliminada del sistema.";
+            return res.status(401).json({ msg: reason });
+        }
+
         const isMatch = await (user as any).compararPassword(password);
         if (!isMatch) {
             return res.status(400).json({ msg: "Contraseña incorrecta" });

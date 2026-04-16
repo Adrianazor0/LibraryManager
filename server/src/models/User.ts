@@ -25,7 +25,7 @@ const userSchema = new Schema<IUser>({
     },
     status: { 
         type: String, 
-        enum: ['activo', 'suspendido'], 
+        enum: ['activo', 'suspendido', 'eliminado'], 
         default: 'activo' 
     },
     profilePhoto: { type: String },
