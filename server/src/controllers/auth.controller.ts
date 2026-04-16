@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import User from '../models/User';
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 
 export const signUp = async (req: Request, res: Response) => {
     const { enrollmentId, name, lastname, email, password, role } = req.body;
