@@ -16,10 +16,12 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      // Petición al endpoint que ya probamos en el backend
+      // Ofuscamos los datos en Base64 para que no se vean planos en el Network Tab
+      const rawData = JSON.stringify({ enrollmentId, password });
+      const encodedData = btoa(rawData);
+
       const response = await api.post('/auth/signin', {
-        enrollmentId,
-        password
+        data: encodedData
       });
       const { token, usuario } = response.data;
 
@@ -38,7 +40,6 @@ const LoginPage = () => {
       navigate('/dashboard');
       
     } catch (error: any) {
-      console.error("Error en login:", error);
       const mensaje = error.response?.data?.msg || "Error de conexión con el Liceo";
       alert(mensaje);
     } finally {

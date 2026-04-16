@@ -9,13 +9,20 @@ import {
   UserIcon,
   ToggleLeftIcon,
   ToggleRightIcon,
-  Loader2Icon
+  Loader2Icon,
+  PlusIcon,
+  XIcon
 } from 'lucide-react';
 
 const PoliciesPage = () => {
   const [policies, setPolicies] = useState<ILibraryPolicy[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
+  
+  // Estados para nueva sección
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newSectionName, setNewSectionName] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     fetchPolicies();
@@ -29,6 +36,23 @@ const PoliciesPage = () => {
       console.error("Error al cargar políticas", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateSection = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSectionName.trim()) return;
+
+    setIsCreating(true);
+    try {
+      await api.post('/policies', { section: newSectionName });
+      setNewSectionName('');
+      setShowAddModal(false);
+      fetchPolicies();
+    } catch (error: any) {
+      alert(error.response?.data?.msg || "Error al crear la sección");
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -70,10 +94,67 @@ const PoliciesPage = () => {
           <h1 className="text-3xl font-black text-gray-800">Reglas de Biblioteca</h1>
           <p className="text-gray-500 font-medium">Configura los límites y tiempos por sección y rol</p>
         </div>
-        <div className="bg-blue-100 text-blue-700 px-4 py-2 rounded-2xl flex items-center gap-2 font-bold">
-          <ShieldCheckIcon size={20} /> Modo Administrador
+        <div className="flex gap-4">
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-2xl flex items-center gap-2 font-bold shadow-lg shadow-blue-100 transition-all"
+          >
+            <PlusIcon size={20} /> Nueva Sección
+          </button>
+          <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-2xl flex items-center gap-2 font-bold">
+            <ShieldCheckIcon size={20} /> Modo Administrador
+          </div>
         </div>
       </div>
+
+      {/* Modal para Nueva Sección */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-md shadow-2xl animate-in zoom-in duration-200">
+            <div className="p-8 space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-black text-gray-800">Añadir Sección</h2>
+                <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600">
+                  <XIcon />
+                </button>
+              </div>
+              
+              <form onSubmit={handleCreateSection} className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-500">Nombre de la nueva sesión (Ej: Fonoteca)</label>
+                  <input 
+                    autoFocus
+                    type="text"
+                    required
+                    value={newSectionName}
+                    onChange={(e) => setNewSectionName(e.target.value)}
+                    placeholder="Escribe el nombre aquí..."
+                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-6 py-4 font-bold text-gray-700 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all"
+                  />
+                </div>
+                
+                <div className="flex gap-4">
+                  <button 
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="flex-1 px-6 py-4 rounded-2xl font-bold text-gray-500 hover:bg-gray-100 transition-all"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit"
+                    disabled={isCreating}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-2xl font-bold shadow-xl shadow-blue-100 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isCreating ? <Loader2Icon className="animate-spin" /> : <PlusIcon size={20} />}
+                    {isCreating ? 'Creando...' : 'Crear Sección'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         {policies.map((policy, pIdx) => (

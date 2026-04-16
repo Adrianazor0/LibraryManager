@@ -1,4 +1,4 @@
-import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { Outlet, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import UserProfileDropdown from '../components/UserProfileDropdown';
 import { 
@@ -12,7 +12,6 @@ import {
 
 const DashboardLayout = () => {
   const user = useAuthStore((state) => state.user);
-  const navigate = useNavigate();
 
   return (
     <div className="flex min-h-screen bg-gray-50">
