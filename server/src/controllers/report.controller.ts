@@ -20,11 +20,18 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     ]);
 
     // 3. Resumen general
+    const today = new Date();
     const totalBooks = await Book.countDocuments();
-    const activeLoans = await Borrow.countDocuments({ status: 'prestado' });
+    // Activos son los que están físicamente fuera (prestados o ya vencidos)
+    const activeLoans = await Borrow.countDocuments({ 
+        status: { $in: ['prestado', 'atrasado'] } 
+    });
+    // Vencidos son los que ya tienen status 'atrasado' O los 'prestado' cuya fecha ya pasó
     const overdueBooks = await Borrow.countDocuments({ 
-      status: { $in: ['prestado', 'atrasado'] }, 
-      dueDate: { $lt: new Date() } 
+      $or: [
+        { status: 'atrasado' },
+        { status: 'prestado', dueDate: { $lt: today } }
+      ]
     });
 
     res.json({

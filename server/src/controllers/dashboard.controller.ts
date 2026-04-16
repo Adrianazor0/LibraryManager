@@ -5,19 +5,24 @@ import Borrow from '../models/Borrow';
 
 export const getDashboardStats = async (req: Request, res: Response) => {
   try {
+    const today = new Date();
+
     const [totalBooks, totalUsers, activeBorrows, overdueBooks, recentBorrows] = await Promise.all([
       Book.countDocuments(),
-      User.countDocuments(),
-      Borrow.countDocuments({ status: 'pendiente' }), 
+      User.countDocuments({ status: { $ne: 'eliminado' } }),
+      // Activos son los que están en posesión (prestado) o ya vencidos (atrasado)
+      Borrow.countDocuments({ status: { $in: ['prestado', 'atrasado'] } }), 
+      // Vencidos son los que tienen status 'atrasado' O los 'prestado' cuya fecha ya pasó
       Borrow.countDocuments({ 
-        status: 'pendiente', 
-        dueDate: { $lt: new Date() } // Asegúrate que el campo sea dueDate o fechaDevolucion según tu modelo
+        $or: [
+            { status: 'atrasado' },
+            { status: 'prestado', dueDate: { $lt: today } }
+        ]
       }),
-      
-      // CAMBIO AQUÍ: Ordenamos por updatedAt para captar devoluciones recientes
-      Borrow.find()
+
+      Borrow.find({ status: { $ne: 'pendiente' } })
         .sort({ updatedAt: -1 }) 
-        .limit(3) // Te sugiero subirlo a 5 para que se vea más lleno, pero puedes dejarlo en 3
+        .limit(5)
         .populate('bookId', 'title')
         .populate('userId', 'name lastname')
     ]);
@@ -30,7 +35,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       recentBorrows
     });
   } catch (error) {
-    console.error(error); // Siempre es bueno loguear el error real en consola
+    console.error("Dashboard Stats Error:", error);
     res.status(500).json({ msg: "Error al generar KPIs" });
   }
 };

@@ -44,7 +44,10 @@ export const createBorrow = async (req: AuthRequest, res: Response) => {
 
         const activeLoans = await Borrow.countDocuments({ 
             userId: user._id, 
-            status: { $in: ['prestado', 'atrasado'] } 
+            $or: [
+                { status: 'atrasado' },
+                { status: 'prestado' } // Incluimos todos los prestados, ya que cuentan para el límite
+            ]
         });
 
         if (activeLoans >= roleRule.maxBooks) {
@@ -108,7 +111,15 @@ export const getActiveBorrows = async (req: Request, res: Response) => {
         .sort({ departureDate: 1 }) // Ordenados por fecha de inicio
         .lean();
 
-        res.json(borrows);
+        // Mapeo dinámico para que el dashboard vea el estado real de atraso
+        const processedBorrows = borrows.map(item => {
+            if (item.status === 'prestado' && new Date() > new Date(item.dueDate)) {
+                return { ...item, status: 'atrasado' };
+            }
+            return item;
+        });
+
+        res.json(processedBorrows);
     } catch (error: any) {
         res.status(500).json({ msg: "Error al obtener préstamos activos" });
     }
@@ -150,8 +161,18 @@ export const getBorrowsHistory = async (req: Request, res: Response) => {
     try {
         const { startDate, endDate, status } = req.query;
         const query: any = {};
+        const today = new Date();
 
-        if (status) query.status = status;
+        // Si el usuario pide 'atrasado', debemos buscar los que ya tienen ese status 
+        // O los que son 'prestado' pero ya vencieron
+        if (status === 'atrasado') {
+            query.$or = [
+                { status: 'atrasado' },
+                { status: 'prestado', dueDate: { $lt: today } }
+            ];
+        } else if (status) {
+            query.status = status;
+        }
 
         if (startDate || endDate) {
             query.departureDate = {};
@@ -163,9 +184,18 @@ export const getBorrowsHistory = async (req: Request, res: Response) => {
             .populate('bookId', 'title author isbn section')
             .populate('userId', 'name lastname enrollmentId role')
             .populate('approvedBy', 'name lastname role')
-            .sort({ departureDate: -1 });
+            .sort({ departureDate: -1 })
+            .lean();
 
-        res.json(history);
+        // Mapear para detectar estados atrasados dinámicamente en la respuesta
+        const processedHistory = history.map(item => {
+            if (item.status === 'prestado' && today > new Date(item.dueDate)) {
+                return { ...item, status: 'atrasado' };
+            }
+            return item;
+        });
+
+        res.json(processedHistory);
     } catch (error) {
         res.status(500).json({ msg: "Error al obtener el historial" });
     }
