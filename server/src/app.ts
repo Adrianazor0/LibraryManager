@@ -19,12 +19,17 @@ connectDB().then(() => {
   seedPolicies();
 });
 
-// Permite todas las conexiones temporalmente para pruebas
+// Configuración de CORS más robusta para producción
 app.use(cors({
-  origin: '*', 
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: ['https://capacitapp-481223.web.app', 'http://localhost:5173', 'http://localhost:4000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
+  credentials: true
 }));
+
+// Responder explícitamente a las peticiones OPTIONS (Preflight)
+app.options('*', cors());
+
 app.use(morgan('dev')); 
 app.use(express.json()); 
 
@@ -36,7 +41,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', report);
 app.use('/api/policies', policyRoutes);
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en puerto ${PORT} y accesible en toda la red local`);
