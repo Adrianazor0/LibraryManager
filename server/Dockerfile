@@ -1,4 +1,4 @@
-# Use a Node.js image to build the app
+# ETAPA 1: Construcción (Builder)
 FROM node:18-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
@@ -6,13 +6,19 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# Use a clean image to run the app (smaller size)
+# ETAPA 2: Producción (La que realmente se sube a Cloud Run)
 FROM node:18-alpine
 WORKDIR /app
+
+# Copiamos solo lo necesario para ejecutar
 COPY package*.json ./
-RUN npm install --production
-# Copy only the compiled files from the builder stage
+RUN npm install --only=production
+
+# Traemos los archivos compilados de la etapa anterior
 COPY --from=builder /app/dist ./dist
-# Cloud Run injects the PORT environment variable automatically
+
+# Configuración de puerto para Cloud Run
+ENV PORT=8080
 EXPOSE 8080
+
 CMD ["node", "dist/app.js"]

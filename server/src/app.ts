@@ -54,10 +54,10 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', report);
 app.use('/api/policies', policyRoutes);
 
-const PORT = process.env.PORT || 8080;
+const PORT = Number(process.env.PORT) || 8080;
 
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en puerto ${PORT} y accesible en toda la red local`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
 
 export default app;
