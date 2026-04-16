@@ -16,9 +16,17 @@ import { seedPolicies } from './models/LibraryPolicy';
 dotenv.config();
 const app: Application = express();
 
-// 1. CORS DEBE SER LO PRIMERO
-app.use(cors()); 
-app.options('*', cors()); 
+// Manual CORS fix
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-auth-token');
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 connectDB().then(() => {
   seedPolicies();
