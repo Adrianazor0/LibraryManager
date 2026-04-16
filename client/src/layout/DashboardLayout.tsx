@@ -1,24 +1,18 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
+import UserProfileDropdown from '../components/UserProfileDropdown';
 import { 
   BookOpenIcon, 
   ArrowUpIcon, 
   UsersIcon, 
   ChartBarIcon, 
-  LogOutIcon,
   HomeIcon,
   ShieldCheckIcon
 } from 'lucide-react'; 
 
 const DashboardLayout = () => {
-  const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -56,23 +50,31 @@ const DashboardLayout = () => {
           )}
         </nav>
 
-        <div className="p-4 border-t border-blue-700">
-          <button 
-            onClick={handleLogout}
-            className="flex items-center w-full p-3 bg-red-600 hover:bg-red-700 rounded-lg transition-colors font-semibold"
-          >
-            <LogOutIcon className="mr-3 w-5 h-5" /> Cerrar Sesión
-          </button>
+        <div className="p-6 border-t border-blue-700 bg-blue-900/30">
+          <div className="flex items-center space-x-3">
+             <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold ring-2 ring-blue-400/30">
+                {user?.name?.charAt(0).toUpperCase()}
+             </div>
+             <div className="overflow-hidden">
+                <p className="text-sm font-bold truncate">{user?.name}</p>
+                <p className="text-[10px] text-blue-300 uppercase tracking-wider font-semibold">{user?.role}</p>
+             </div>
+          </div>
         </div>
       </aside>
 
       <main className="flex-1 flex flex-col">
-        <header className="h-16 bg-white shadow-sm flex items-center justify-between px-8">
-          <span className="text-gray-600 font-medium">Bienvenido, <span className="text-blue-600 font-bold">{user?.name}</span></span>
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold">
-              {user?.name?.charAt(0)}
+        <header className="h-16 bg-white shadow-sm flex items-center justify-between px-8 border-b border-gray-100">
+          <div className="flex items-center">
+            <h1 className="text-gray-500 text-sm font-medium">Sistema de Gestión / <span className="text-gray-800 font-bold">Dashboard</span></h1>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            <div className="text-right mr-2 hidden md:block">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-tight">Usuario Activo</p>
+              <p className="text-sm font-bold text-blue-700">{user?.name}</p>
             </div>
+            <UserProfileDropdown />
           </div>
         </header>
 
@@ -83,5 +85,6 @@ const DashboardLayout = () => {
     </div>
   );
 };
+
 
 export default DashboardLayout;
