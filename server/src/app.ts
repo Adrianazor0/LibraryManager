@@ -25,7 +25,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
   credentials: true
 }));
-app.options('*', cors());
+// En Express 5, el wildcard '*' ya no es válido, se usa '(.*)'
+app.options('(.*)', cors());
 
 // Middleware básico
 app.use(morgan('dev')); 
