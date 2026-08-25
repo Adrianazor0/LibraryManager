@@ -137,7 +137,7 @@ const BorrowsHistoryPage = () => {
                 history.map((row: any) => (
                   <tr key={row._id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="p-6 font-bold text-gray-700 text-sm">
-                      {new Date(row.departureDate).toLocaleDateString('es-DO')}
+                      {new Date(row.departureDate).toLocaleDateString('es-DO', { timeZone: 'UTC' })}
                     </td>
                     <td className="p-6">
                       <p className="font-bold text-blue-600 text-sm">{row.bookId?.title}</p>
@@ -148,7 +148,7 @@ const BorrowsHistoryPage = () => {
                       <p className="text-[10px] text-gray-400 font-bold">{row.userId?.enrollmentId}</p>
                     </td>
                     <td className="p-6 font-bold text-gray-600 text-sm">
-                      {new Date(row.dueDate).toLocaleDateString('es-DO')}
+                      {new Date(row.dueDate).toLocaleDateString('es-DO', { timeZone: 'UTC' })}
                     </td>
                     <td className="p-6">
                       <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-tighter ${

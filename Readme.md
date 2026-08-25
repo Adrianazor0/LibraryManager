@@ -17,3 +17,33 @@ A comprehensive digital library management system designed for college students 
 
 ## Support
 Contact the library help desk for assistance or technical issues.
+
+##Testing models
+
+example registration
+
+{
+  "enrollmentId": "2026-0001",
+  "name": "Admin",
+  "lastname": "Ureña",
+  "email": "admin@liceolaurena.edu.do",
+  "password": "password123",
+  "role": "admin"
+}
+
+example Sign In´
+{
+    "enrollmentId": "2026-0001",
+    "password": "password123"
+}
+
+example Book register
+
+{
+  "title": "Cien años de soledad",
+  "author": "Gabriel García Márquez",
+  "isbn": "978-0307474728",
+  "category": "Literatura",
+  "stockTotal": 5,
+  "stockAvailable": 5
+}

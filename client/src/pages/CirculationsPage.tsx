@@ -45,7 +45,7 @@ const CirculationsPage = () => {
                     <td className="p-6">
                       <div className="flex items-center gap-2 font-bold text-gray-600">
                         <CalendarIcon className="w-4 h-4 text-blue-500" />
-                        {new Date(borrow.departureDate).toLocaleDateString('es-DO')}
+                        {new Date(borrow.departureDate).toLocaleDateString('es-DO', { timeZone: 'UTC' })}
                       </div>
                     </td>
                     <td className="p-6">
@@ -56,7 +56,7 @@ const CirculationsPage = () => {
                     <td className="p-6">
                       <div className={`flex items-center gap-2 font-bold ${isOverdue ? 'text-red-500' : 'text-gray-600'}`}>
                         <CalendarIcon className="w-4 h-4" />
-                        {new Date(borrow.dueDate).toLocaleDateString('es-DO')}
+                        {new Date(borrow.dueDate).toLocaleDateString('es-DO', { timeZone: 'UTC' })}
                         {isOverdue && <AlertTriangleIcon className="w-4 h-4 animate-pulse" />}
                       </div>
                     </td>

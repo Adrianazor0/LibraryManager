@@ -43,9 +43,11 @@ const BorrowsPage = () => {
     }
   };
 
-  const handleApprove = async (id: string, dueDate: string) => {
+  const handleApprove = async (id: string, dueDate: any) => {
     try {
-      await axios.put(`/borrows/approve/${id}`, { dueDate });
+      // Asegurarnos de enviar solo la parte de la fecha YYYY-MM-DD para evitar errores de zona horaria
+      const dateToSend = typeof dueDate === 'string' ? dueDate.split('T')[0] : new Date(dueDate).toISOString().split('T')[0];
+      await axios.put(`/borrows/approve/${id}`, { dueDate: dateToSend });
       alert("¡Libro entregado físicamente! El stock ha sido actualizado.");
       fetchPendingRequests(); // Refrescamos la lista
     } catch (err: any) {
@@ -146,7 +148,7 @@ const BorrowsPage = () => {
                       <CalendarIcon size={16} className="text-white" />
                       <div className="flex flex-col">
                         <span className="text-xs font-black text-white uppercase tracking-wider">
-                          Inicio: {new Date(req.departureDate).toLocaleDateString('es-DO', { weekday: 'long', day: 'numeric', month: 'long' })}
+                          Inicio: {new Date(req.departureDate).toLocaleDateString('es-DO', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })}
                         </span>
                         {req.dueDate && (
                           <span className="text-[10px] font-bold text-blue-100 uppercase">
