@@ -10,6 +10,8 @@ import {
   ShieldCheckIcon
 } from 'lucide-react'; 
 
+import { RagChatbotModal } from '../components/RagChatbotModal';
+
 const DashboardLayout = () => {
   const user = useAuthStore((state) => state.user);
 
@@ -62,7 +64,7 @@ const DashboardLayout = () => {
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col relative">
         <header className="h-16 bg-white shadow-sm flex items-center justify-between px-8 border-b border-gray-100">
           <div className="flex items-center">
             <h1 className="text-gray-500 text-sm font-medium">Sistema de Gestión / <span className="text-gray-800 font-bold">Dashboard</span></h1>
@@ -80,6 +82,9 @@ const DashboardLayout = () => {
         <div className="p-8">
           <Outlet />
         </div>
+
+        {/* ASISTENTE CONVERSACIONAL RAG 24/7 */}
+        <RagChatbotModal />
       </main>
     </div>
   );

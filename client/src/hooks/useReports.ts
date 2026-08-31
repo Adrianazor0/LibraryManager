@@ -8,7 +8,10 @@ interface DashboardStats {
     totalBooks: number;
     activeLoans: number;
     overdueBooks: number;
-    activeUsers?: number; // Opcional por si aún no lo calculas
+    activeUsers?: number;
+    turnoverRate?: number;
+    onTimeReturnRate?: number;
+    healthIndex?: number;
   };
 }
 
