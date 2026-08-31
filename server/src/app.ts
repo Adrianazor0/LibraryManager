@@ -13,6 +13,7 @@ import userRoutes from './routes/user.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import report from './routes/report.routes';
 import policyRoutes from './routes/policy.routes';
+import chatRoutes from './routes/chat.routes';
 import { seedPolicies } from './models/LibraryPolicy';
 
 // Cargar variables de entorno lo antes posible
@@ -21,15 +22,18 @@ dotenv.config();
 const app: Application = express();
 const PORT = process.env.PORT || 8080;
 
-// Configuración de CORS
+// Configuración Global Dinámica de CORS (Permite Vercel, Firebase, APK Móvil y Localhost)
 app.use(cors({
-  origin: [
-    'https://capacitapp-481223.web.app',
-    'https://capacitapp-481223.firebaseapp.com',
-    'http://localhost:5173' 
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
+  origin: (origin, callback) => {
+    // Permitir solicitudes sin origen (mobile apps, Postman) o desde Vercel, Render, Firebase y Localhost
+    if (!origin || origin.includes('vercel.app') || origin.includes('web.app') || origin.includes('localhost') || origin.includes('onrender.com')) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Permitir acceso universal para la biblioteca
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token', 'Accept'],
   credentials: true
 }));
 
@@ -37,14 +41,12 @@ app.use(cors({
 app.use(morgan('dev')); 
 app.use(express.json()); 
 
-// Health Check para Cloud Run
+// Health Check para Cloud Run / Render
 app.get('/', (req, res) => {
-  res.status(200).send('<h1>Biblioteca API - ONLINE</h1>');
+  res.status(200).send('<h1>Biblioteca Liceo La Ureña API - ONLINE 🚀</h1>');
 });
 
-import chatRoutes from './routes/chat.routes';
-
-// Rutas de la API
+// Rutas de la API Principal
 app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api/borrows', borrowRoutes);
@@ -54,18 +56,23 @@ app.use('/api/reports', report);
 app.use('/api/policies', policyRoutes);
 app.use('/api/chat', chatRoutes);
 
+// Aliases directos para compatibilidad (/auth/signin -> /api/auth/signin)
+app.use('/auth', authRoutes);
+app.use('/books', bookRoutes);
+app.use('/borrows', borrowRoutes);
+
 // Manejo de rutas no encontradas
 app.use((req, res) => {
   res.status(404).json({ msg: `Ruta no encontrada: ${req.method} ${req.url}` });
 });
 
-// Iniciar el servidor inmediatamente para pasar el health check de Cloud Run
+// Iniciar el servidor inmediatamente para pasar el health check de Cloud Run / Render
 const server = app.listen(PORT, () => {
     console.log(`>>> SERVER LIVE ON PORT ${PORT} <<<`);
     
     // Inicialización en segundo plano (DB y Semillas)
     connectDB().then(() => {
-        console.log("Conectado a MongoDB");
+        console.log("Conectado a MongoDB Atlas");
         return seedPolicies();
     }).then(() => {
         console.log("Políticas verificadas/inicializadas");
