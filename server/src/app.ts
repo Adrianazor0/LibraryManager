@@ -56,10 +56,15 @@ app.use('/api/reports', report);
 app.use('/api/policies', policyRoutes);
 app.use('/api/chat', chatRoutes);
 
-// Aliases directos para compatibilidad (/auth/signin -> /api/auth/signin)
+// Aliases directos para compatibilidad universal (funciona con /api/... o /...)
 app.use('/auth', authRoutes);
 app.use('/books', bookRoutes);
 app.use('/borrows', borrowRoutes);
+app.use('/users', userRoutes);
+app.use('/dashboard', dashboardRoutes);
+app.use('/reports', report);
+app.use('/policies', policyRoutes);
+app.use('/chat', chatRoutes);
 
 // Manejo de rutas no encontradas
 app.use((req, res) => {
