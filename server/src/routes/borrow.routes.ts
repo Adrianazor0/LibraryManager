@@ -1,11 +1,12 @@
 import { Router } from 'express';
-import { createBorrow, returnBook, getBorrowsHistory, getActiveBorrows, requestBorrow, getMyBorrows, approveBorrow, rejectBorrow, getPendingRequests } from '../controllers/borrow.controller';
+import { createBorrow, returnBook, getBorrowsHistory, getActiveBorrows, requestBorrow, getMyBorrows, approveBorrow, rejectBorrow, getPendingRequests, getBorrowAnalytics, renewBorrow } from '../controllers/borrow.controller';
 import { verifyToken } from '../middlewares/auth.middleware';
 import { isStaff } from '../middlewares/role.middleware';
 
 const router = Router();
 
 // 1. RUTAS DE ADMINISTRACIÓN / STAFF
+router.get('/analytics', [verifyToken, isStaff], getBorrowAnalytics);
 router.get('/actives', [verifyToken, isStaff], getActiveBorrows); 
 router.get('/history', [verifyToken, isStaff], getBorrowsHistory);
 router.get('/pending', [verifyToken, isStaff], getPendingRequests);
@@ -17,6 +18,6 @@ router.delete('/reject/:id', [verifyToken, isStaff], rejectBorrow);
 // 2. RUTAS DE USUARIO
 router.get('/my-borrows', verifyToken, getMyBorrows);
 router.post('/request', verifyToken, requestBorrow);
-
+router.put('/renew/:id', verifyToken, renewBorrow);
 
 export default router;

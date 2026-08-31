@@ -42,6 +42,8 @@ app.get('/', (req, res) => {
   res.status(200).send('<h1>Biblioteca API - ONLINE</h1>');
 });
 
+import chatRoutes from './routes/chat.routes';
+
 // Rutas de la API
 app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);
@@ -50,6 +52,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', report);
 app.use('/api/policies', policyRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Manejo de rutas no encontradas
 app.use((req, res) => {

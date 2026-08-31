@@ -392,3 +392,76 @@ export const scanBookOCR = async (req: Request, res: Response) => {
         res.status(500).json({ msg: "Error al procesar la imagen con OCR", error: error.message });
     }
 };
+
+/**
+ * Controller for Phase 4: Adaptive Personalized Recommendation System (Carousels for 4to, 5to, 6to)
+ */
+export const getRecommendationsByGrade = async (req: Request, res: Response) => {
+    try {
+        const { grade } = req.params;
+        const allBooks = await Book.find({}).lean();
+
+        let filtered3rd: any[] = [];
+        let filtered4to: any[] = [];
+        let filtered5to: any[] = [];
+        let filtered6to: any[] = [];
+
+        allBooks.forEach(b => {
+            const title = (b.title + " " + b.author).toLowerCase();
+
+            // 3ro Grado: Exactamente los 4 recursos clave (Quiroga, Geometría Baldor, La Española, Física Tippens)
+            if (title.includes("locura y de muerte") || title.includes("geometría") || title.includes("geometria") || title.includes("española en el siglo xvi") || title.includes("espanola en el siglo xvi") || title.includes("tippens") || title.includes("física general") || title.includes("fisica general")) {
+                filtered3rd.push({ ...b, recommendationTag: "3ro Secundaria • Geometría, Cuentos & Historia Colonial", academicMatch: 97 });
+            }
+
+            // 4to Grado: Exactamente los 4 recursos clave (Bosch, Geografía, Principito, Biología)
+            if (title.includes("bosch") || title.includes("geografía") || title.includes("geografia") || title.includes("principito") || title.includes("biología") || title.includes("biologia")) {
+                filtered4to.push({ ...b, recommendationTag: "4to Secundaria • Lectura Obligatoria MINERD", academicMatch: 98 });
+            }
+
+            // 5to Grado: Exactamente los 5 recursos clave (Baldor, Física, Moya Pons, Química, Over)
+            if (title.includes("álgebra") || title.includes("algebra") || title.includes("física universi") || title.includes("fisica universi") || title.includes("moya pons") || title.includes("química") || title.includes("quimica") || title.includes("over")) {
+                filtered5to.push({ ...b, recommendationTag: "5to Secundaria • Ciencias Básicas & STEM", academicMatch: 96 });
+            }
+
+            // 6to Grado: Exactamente los 5 recursos clave (Quijote, Hamlet, Dominicanismos, Gramática, Atlas Histórico)
+            if (title.includes("quijote") || title.includes("hamlet") || title.includes("dominicanismos") || title.includes("gramática") || title.includes("gramatica") || title.includes("atlas histórico") || title.includes("atlas historico")) {
+                filtered6to.push({ ...b, recommendationTag: "6to Secundaria • Pre-Universitario & Humanidades", academicMatch: 99 });
+            }
+        });
+
+        if (filtered3rd.length === 0) filtered3rd = allBooks.slice(0, 4);
+        if (filtered4to.length === 0) filtered4to = allBooks.slice(0, 4);
+        if (filtered5to.length === 0) filtered5to = allBooks.slice(2, 6);
+        if (filtered6to.length === 0) filtered6to = allBooks.slice(4, 8);
+
+        res.json({
+            success: true,
+            selectedGrade: grade || 'todos',
+            carousels: {
+                "3ro": {
+                    title: "📙 3ro de Secundaria • Geometría, Cuentos & Historia Colonial",
+                    subtitle: "Desarrollo de análisis lógico, narrativa latinoamericana e historia de La Española",
+                    books: filtered3rd.slice(0, 6)
+                },
+                "4to": {
+                    title: "📘 4to de Secundaria • Lecturas Académicas & Literatura Dominicana",
+                    subtitle: "Cuentos clásicos, geografía nacional y desarrollo narrativo",
+                    books: filtered4to.slice(0, 6)
+                },
+                "5to": {
+                    title: "🔬 5to de Secundaria • Ciencias Básicas, Física & Matemáticas",
+                    subtitle: "Textos de referencia para experimentos, cálculo elemental e historia",
+                    books: filtered5to.slice(0, 6)
+                },
+                "6to": {
+                    title: "🎓 6to de Secundaria • Preparación Pre-Universitaria & Obras Cumbre",
+                    subtitle: "Literatura universal, léxico nacional y pensamiento crítico",
+                    books: filtered6to.slice(0, 6)
+                }
+            }
+        });
+    } catch (error: any) {
+        res.status(500).json({ msg: "Error al generar recomendaciones por grado", error: error.message });
+    }
+};
