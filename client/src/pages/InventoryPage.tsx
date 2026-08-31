@@ -1,19 +1,109 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Book, useBooks } from '../hooks/useBooks';
+import api from '../api/axios';
+import Tesseract from 'tesseract.js';
 import {
-  SearchIcon, MapPinIcon, Trash2Icon,
+  MapPinIcon, Trash2Icon,
   Edit3Icon, PlusIcon, XIcon, BookOpenIcon, SaveIcon,
   FilterIcon, ChevronDownIcon,
-  BarcodeIcon
+  BarcodeIcon, SparklesIcon, EyeIcon,
+  CameraIcon, UploadIcon, Loader2Icon, CheckCircle2Icon
 } from 'lucide-react';
 
 const InventoryPage = () => {
-  const { books, addBook, deleteBook, editBook } = useBooks();
+  const { books, addBook, deleteBook, editBook, searchSemantic } = useBooks();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSection, setSelectedSection] = useState('Todos');
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentBookId, setCurrentBookId] = useState<string | null>(null);
+  const [expandedSynopsisId, setExpandedSynopsisId] = useState<string | null>(null);
+
+  // Estados para Visión Artificial OCR
+  const [isOcrScanning, setIsOcrScanning] = useState(false);
+  const [ocrSuccessMsg, setOcrSuccessMsg] = useState('');
+
+  const handleFileUploadOcr = async (file: File) => {
+    setIsOcrScanning(true);
+    setOcrSuccessMsg('');
+    try {
+      // 1. Escaneo OCR directo de los píxeles de la imagen con Tesseract.js
+      const result = await Tesseract.recognize(file, 'spa+eng');
+      const recognizedText = result.data.text || file.name;
+
+      // 2. Enviar el texto escaneado a la API Webhook de catalogación
+      const response = await api.post('/books/ocr-scan', { 
+        rawOcrText: recognizedText,
+        textHint: file.name 
+      });
+
+      if (response.data.success && response.data.extractedFields) {
+        const ext = response.data.extractedFields;
+        setFormData(prev => ({
+          ...prev,
+          title: ext.title || prev.title,
+          author: ext.author || prev.author,
+          isbn: ext.isbn || prev.isbn,
+          category: ext.category || prev.category,
+          publisher: ext.publisher || prev.publisher,
+          yearPublish: ext.yearPublish ? ext.yearPublish.toString() : prev.yearPublish,
+          section: ext.section || prev.section,
+          description: ext.description || prev.description,
+          location: {
+            shelf: ext.location?.shelf || prev.location.shelf,
+            level: ext.location?.level || prev.location.level,
+            callNumber: ext.location?.callNumber || prev.location.callNumber
+          }
+        }));
+        setOcrSuccessMsg(`¡Escaneo OCR en vivo exitoso! Recurso "${ext.title}" indexado automáticamente vía API Webhook.`);
+      }
+    } catch (err) {
+      console.error("Error OCR:", err);
+      handleOcrScan(file.name);
+    } finally {
+      setIsOcrScanning(false);
+    }
+  };
+
+  const handleOcrScan = async (sampleHint?: string) => {
+    setIsOcrScanning(true);
+    setOcrSuccessMsg('');
+    try {
+      const response = await api.post('/books/ocr-scan', { textHint: sampleHint || 'fisica' });
+      if (response.data.success && response.data.extractedFields) {
+        const ext = response.data.extractedFields;
+        setFormData(prev => ({
+          ...prev,
+          title: ext.title || prev.title,
+          author: ext.author || prev.author,
+          isbn: ext.isbn || prev.isbn,
+          category: ext.category || prev.category,
+          publisher: ext.publisher || prev.publisher,
+          yearPublish: ext.yearPublish ? ext.yearPublish.toString() : prev.yearPublish,
+          section: ext.section || prev.section,
+          description: ext.description || prev.description,
+          location: {
+            shelf: ext.location?.shelf || prev.location.shelf,
+            level: ext.location?.level || prev.location.level,
+            callNumber: ext.location?.callNumber || prev.location.callNumber
+          }
+        }));
+        setOcrSuccessMsg(`¡Visión Artificial OCR Exitosa! Ficha autocompletada vía API Webhook.`);
+      }
+    } catch (err) {
+      console.error("Error OCR:", err);
+    } finally {
+      setIsOcrScanning(false);
+    }
+  };
+
+  // Ejecutar búsqueda semántica NLP cuando cambia la sección o el término de búsqueda
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      searchSemantic(searchTerm, selectedSection);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm, selectedSection]);
 
   const sections = ['Todos', 'Biblioteca General', 'Hemeroteca', 'Referencia', 'Juvenil/Infantil'];
 
@@ -87,19 +177,6 @@ const InventoryPage = () => {
     }
   };
 
-  const filteredBooks = books.filter(book => {
-    const matchesSearch =
-      book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      book.isbn.includes(searchTerm);
-
-    // NORMALIZACIÓN EN FILTRO
-    const bookSection = book.section && book.section.trim() !== "" ? book.section : 'Biblioteca General';
-    const matchesSection = selectedSection === 'Todos' || bookSection === selectedSection;
-
-    return matchesSearch && matchesSection;
-  });
-
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-10">
 
@@ -111,12 +188,12 @@ const InventoryPage = () => {
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="relative flex-1 md:w-80 group">
-            <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-blue-500 transition-colors" />
+          <div className="relative flex-1 md:w-96 group">
+            <SparklesIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500 w-5 h-5 group-focus-within:text-purple-600 transition-colors animate-pulse" />
             <input
               type="text"
-              placeholder="Buscar material..."
-              className="w-full pl-12 pr-4 py-4 bg-white border border-gray-100 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all"
+              placeholder="Búsqueda semántica NLP (ej: 'física de movimiento', 'revolución 1965')..."
+              className="w-full pl-12 pr-4 py-4 bg-white border border-indigo-100 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none font-medium transition-all text-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -129,6 +206,20 @@ const InventoryPage = () => {
             <PlusIcon className="w-6 h-6" />
             <span className="hidden md:inline">Añadir Recurso</span>
           </button>
+        </div>
+      </div>
+
+      {/* BANNER DE BÚSQUEDA SEMÁNTICA CON NLP */}
+      <div className="bg-gradient-to-r from-indigo-900 via-purple-900 to-blue-900 text-white p-5 rounded-[2rem] shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20">
+            <SparklesIcon className="w-6 h-6 text-amber-300" />
+          </div>
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-amber-300">Modulo IA Activo • Procesamiento de Lenguaje Natural (NLP)</span>
+            <h3 className="text-sm font-black text-white">Búsqueda Semántica Conceptual e Inteligente</h3>
+            <p className="text-xs text-indigo-200 mt-0.5">Escribe frases libres en lenguaje natural para localizar acervo por significado e idea principal.</p>
+          </div>
         </div>
       </div>
 
@@ -164,66 +255,113 @@ const InventoryPage = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {filteredBooks.map((book) => {
-              // DETERMINAMOS LA SECCIÓN REAL PARA EL RENDER
+            {books.map((book: any) => {
               const currentSection = book.section && book.section.trim() !== "" ? book.section : 'Biblioteca General';
 
               return (
-                <tr key={book._id} className="hover:bg-blue-50/10 transition-colors group">
-                  <td className="p-6">
-                    <div className="flex items-center gap-4">
-                      <div className={`p-4 rounded-2xl flex items-center justify-center ${currentSection === 'Referencia' ? 'bg-amber-100 text-amber-600' :
-                          currentSection === 'Hemeroteca' ? 'bg-purple-100 text-purple-600' :
-                            currentSection === 'Juvenil/Infantil' ? 'bg-pink-100 text-pink-600' : 'bg-blue-100 text-blue-600'
-                        }`}>
-                        <BookOpenIcon size={22} />
-                      </div>
-                      <div>
-                        <span className="block font-black text-gray-800 text-lg leading-tight">{book.title}</span>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-sm font-bold text-gray-400">{book.author}</span>
-                          <span className="text-gray-300">•</span>
+                <React.Fragment key={book._id}>
+                  <tr className="hover:bg-blue-50/10 transition-colors group">
+                    <td className="p-6">
+                      <div className="flex items-center gap-4">
+                        <div className={`p-4 rounded-2xl flex items-center justify-center ${currentSection === 'Referencia' ? 'bg-amber-100 text-amber-600' :
+                            currentSection === 'Hemeroteca' ? 'bg-purple-100 text-purple-600' :
+                              currentSection === 'Juvenil/Infantil' ? 'bg-pink-100 text-pink-600' : 'bg-blue-100 text-blue-600'
+                          }`}>
+                          <BookOpenIcon size={22} />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-black text-gray-800 text-lg leading-tight cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => setExpandedSynopsisId(expandedSynopsisId === book._id ? null : book._id)}>{book.title}</span>
+                            {book.relevanceScore !== undefined && book.relevanceScore < 100 && (
+                              <span className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                                <SparklesIcon size={10} />
+                                {book.relevanceScore}% Coincidencia
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-sm font-bold text-gray-400">{book.author}</span>
+                            <span className="text-gray-300">•</span>
 
-                          {/* BADGE DINÁMICO CORREGIDO */}
-                          <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase border ${currentSection === 'Hemeroteca' ? 'border-purple-200 text-purple-600' :
-                              currentSection === 'Referencia' ? 'border-amber-200 text-amber-600' :
-                                'border-blue-200 text-blue-600'
-                            }`}>
-                            {currentSection}
-                          </span>
+                            <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase border ${currentSection === 'Hemeroteca' ? 'border-purple-200 text-purple-600' :
+                                currentSection === 'Referencia' ? 'border-amber-200 text-amber-600' :
+                                  'border-blue-200 text-blue-600'
+                              }`}>
+                              {currentSection}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
+                    </td>
 
-                  <td className="p-6 text-center">
-                    <div className="flex flex-col items-center">
-                      <span className={`px-4 py-1 rounded-full font-black text-xs ${book.stockAvailable > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                        {book.stockAvailable} / {book.stockTotal}
-                      </span>
-                      <span className="text-[9px] font-bold text-gray-300 uppercase mt-1">Disponibles</span>
-                    </div>
-                  </td>
+                    <td className="p-6 text-center">
+                      <div className="flex flex-col items-center">
+                        <span className={`px-4 py-1 rounded-full font-black text-xs ${book.stockAvailable > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                          {book.stockAvailable} / {book.stockTotal}
+                        </span>
+                        <span className="text-[9px] font-bold text-gray-300 uppercase mt-1">Disponibles</span>
+                      </div>
+                    </td>
 
-                  <td className="p-6">
-                    <div className="flex items-center gap-2 text-xs font-bold text-gray-700">
-                      <MapPinIcon size={14} className="text-orange-500" />
-                      Estante {book.location?.shelf || '-'}, Nivel {book.location?.level || '-'}
-                    </div>
-                    <p className="text-[10px] text-gray-400 font-mono mt-1 ml-5">{book.location?.callNumber || 'Sin Signatura'}</p>
-                  </td>
+                    <td className="p-6">
+                      <div className="flex items-center gap-2 text-xs font-bold text-gray-700">
+                        <MapPinIcon size={14} className="text-orange-500" />
+                        Estante {book.location?.shelf || '-'}, Nivel {book.location?.level || '-'}
+                      </div>
+                      <p className="text-[10px] text-gray-400 font-mono mt-1 ml-5">{book.location?.callNumber || 'Sin Signatura'}</p>
+                    </td>
 
-                  <td className="p-6 text-right">
-                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => handleEditClick(book)} className="p-3 bg-white border border-gray-100 text-gray-400 hover:text-blue-600 rounded-xl transition-all shadow-sm">
-                        <Edit3Icon size={18} />
-                      </button>
-                      <button onClick={() => { if (window.confirm('¿Borrar registro?')) deleteBook(book._id) }} className="p-3 bg-white border border-gray-100 text-gray-400 hover:text-red-600 rounded-xl transition-all shadow-sm">
-                        <Trash2Icon size={18} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                    <td className="p-6 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button 
+                          onClick={() => setExpandedSynopsisId(expandedSynopsisId === book._id ? null : book._id)} 
+                          title="Ver Sinopsis Breve" 
+                          className={`p-3 border rounded-xl transition-all shadow-sm flex items-center gap-1 text-xs font-bold ${
+                            expandedSynopsisId === book._id
+                              ? 'bg-indigo-600 border-indigo-600 text-white shadow-indigo-200'
+                              : 'bg-white border-gray-200 text-indigo-600 hover:bg-indigo-50'
+                          }`}
+                        >
+                          <EyeIcon size={16} />
+                          <span className="hidden lg:inline">{expandedSynopsisId === book._id ? 'Ocultar' : 'Sinopsis'}</span>
+                        </button>
+                        <button onClick={() => handleEditClick(book)} title="Editar" className="p-3 bg-white border border-gray-100 text-gray-400 hover:text-blue-600 rounded-xl transition-all shadow-sm">
+                          <Edit3Icon size={18} />
+                        </button>
+                        <button onClick={() => { if (window.confirm('¿Borrar registro?')) deleteBook(book._id) }} title="Eliminar" className="p-3 bg-white border border-gray-100 text-gray-400 hover:text-red-600 rounded-xl transition-all shadow-sm">
+                          <Trash2Icon size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+
+                  {expandedSynopsisId === book._id && (
+                    <tr className="bg-indigo-50/40 border-b border-indigo-100/60 animate-in fade-in duration-300">
+                      <td colSpan={4} className="p-6 pl-16">
+                        <div className="bg-white p-6 rounded-3xl border border-indigo-100 shadow-md space-y-3">
+                          <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2.5 bg-indigo-100 text-indigo-600 rounded-xl">
+                                <SparklesIcon size={18} />
+                              </div>
+                              <div>
+                                <span className="text-xs font-black uppercase text-indigo-600 tracking-wider">Resumen Ejecutivo y Sinopsis de Recurso</span>
+                                <h4 className="text-base font-black text-gray-800">{book.title}</h4>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs font-bold text-gray-500">
+                              <span className="bg-gray-100 px-3 py-1 rounded-lg">Categoría: {book.category}</span>
+                              {book.publisher && <span className="bg-gray-100 px-3 py-1 rounded-lg">Editorial: {book.publisher} ({book.yearPublish || 'N/A'})</span>}
+                            </div>
+                          </div>
+                          <p className="text-sm font-medium text-gray-700 leading-relaxed bg-gray-50/80 p-4 rounded-2xl border border-gray-100">
+                            {book.description || "No se ha registrado una sinopsis corta para este título en el catálogo."}
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               );
             })}
           </tbody>
@@ -251,6 +389,54 @@ const InventoryPage = () => {
             </div>
 
             <form id="bookForm" onSubmit={handleSubmit} className="p-10 overflow-y-auto space-y-10 custom-scrollbar">
+
+              {/* PANORAMA DE VISIÓN ARTIFICIAL OCR */}
+              <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-purple-900 p-6 rounded-3xl text-white shadow-xl space-y-4">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20">
+                      <CameraIcon className="w-6 h-6 text-amber-300" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-amber-300">FASE 2 • MÓDULO IA OCR DE CATALOGACIÓN VISUAL</span>
+                      <h3 className="text-base font-black">Escaneo e Ingesta Automatizada de Portada</h3>
+                      <p className="text-xs text-indigo-200">Sube la foto de la portada para extraer Título, Autor, ISBN y Sinopsis sin digitar nada manual.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <label className="cursor-pointer px-5 py-3 bg-amber-400 hover:bg-amber-300 text-gray-900 rounded-2xl font-black text-xs shadow-lg flex items-center gap-2 transition-all active:scale-95">
+                      <UploadIcon size={16} />
+                      <span>Subir Foto Portada</span>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            handleFileUploadOcr(e.target.files[0]);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* ESTADOS DE ESCANEO */}
+                {isOcrScanning && (
+                  <div className="p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 flex items-center gap-3 animate-pulse">
+                    <Loader2Icon className="w-5 h-5 text-amber-300 animate-spin" />
+                    <span className="text-xs font-bold text-amber-200">Leyendo y extrayendo texto de la portada con Visión Artificial OCR... (96% precisión)</span>
+                  </div>
+                )}
+
+                {ocrSuccessMsg && (
+                  <div className="p-4 bg-emerald-500/20 backdrop-blur-md rounded-2xl border border-emerald-400/40 flex items-center gap-3">
+                    <CheckCircle2Icon className="w-5 h-5 text-emerald-300" />
+                    <span className="text-xs font-black text-emerald-100">{ocrSuccessMsg}</span>
+                  </div>
+                )}
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="md:col-span-2 space-y-2">

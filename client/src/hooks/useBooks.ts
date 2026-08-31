@@ -23,15 +23,20 @@ export interface Book {
     };
 }
 
+export interface SemanticBook extends Book {
+    relevanceScore?: number;
+    tags?: string[];
+}
+
 export const useBooks = () => {
-    const [books, setBooks] = useState<Book[]>([]);
+    const [books, setBooks] = useState<SemanticBook[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isSemanticSearching, setIsSemanticSearching] = useState(false);
 
     // Usamos useCallback para que fetchBooks no cambie en cada render
     const fetchBooks = useCallback(async () => {
         setLoading(true);
         try {
-            // Asegúrate de que este endpoint sea el correcto (/books o /books/catalog)
             const response = await api.get('/books/catalog');
             setBooks(response.data);
         } catch (error) {
@@ -41,15 +46,28 @@ export const useBooks = () => {
         }
     }, []);
 
+    const searchSemantic = async (query: string, section?: string, category?: string) => {
+        setIsSemanticSearching(true);
+        try {
+            const params = new URLSearchParams();
+            if (query) params.append('query', query);
+            if (section && section !== 'Todos') params.append('section', section);
+            if (category && category !== 'Todas') params.append('category', category);
+
+            const response = await api.get(`/books/search-semantic?${params.toString()}`);
+            setBooks(response.data.results);
+            return response.data;
+        } catch (error) {
+            console.error("Error en búsqueda semántica:", error);
+        } finally {
+            setIsSemanticSearching(false);
+        }
+    };
+
     const addBook = async (bookData: Partial<Book>) => {
         try {
-            // El backend recibe el objeto completo (incluyendo location)
             await api.post('/books/register', bookData);
-
-            // En lugar de actualización optimista, refrescamos para obtener
-            // la data procesada por el backend (IDs, timestamps, etc.)
             await fetchBooks();
-
             return { success: true };
         } catch (error: any) {
             const mensaje = error.response?.data?.msg || "Error al registrar el libro";
@@ -58,47 +76,37 @@ export const useBooks = () => {
         }
     };
 
-const editBook = async (id: string, bookData: Partial<Book>) => {
-    try {
-        await api.put(`/books/update/${id}`, bookData);
-        
-        // --- MODIFICACIÓN AQUÍ ---
-        // Actualizamos el estado local manualmente para que la UI 
-        // cambie al instante sin esperar el re-fetch
-        setBooks((prevBooks) => 
-            prevBooks.map((b) => 
-                b._id === id ? { ...b, ...bookData } : b
-            )
-        );
+    const editBook = async (id: string, bookData: Partial<Book>) => {
+        try {
+            await api.put(`/books/update/${id}`, bookData);
+            setBooks((prevBooks) => 
+                prevBooks.map((b) => 
+                    b._id === id ? { ...b, ...bookData } : b
+                )
+            );
+            await fetchBooks(); 
+            return { success: true };
+        } catch (error: any) {
+            const mensaje = error.response?.data?.msg || "Error al actualizar el libro";
+            return { success: false, error: mensaje };
+        }
+    };
 
-        // De todos modos refrescamos por seguridad
-        await fetchBooks(); 
-        
-        return { success: true };
-    } catch (error: any) {
-        const mensaje = error.response?.data?.msg || "Error al actualizar el libro";
-        return { success: false, error: mensaje };
-    }
-};
+    const deleteBook = async (id: string) => {
+        const confirmacion = window.confirm("¿Estás seguro de que deseas eliminar este libro? Esta acción no se puede deshacer.");
+        if (!confirmacion) return;
 
-const deleteBook = async (id: string) => {
-    // Confirmación nativa del navegador
-    const confirmacion = window.confirm("¿Estás seguro de que deseas eliminar este libro? Esta acción no se puede deshacer.");
-    
-    if (!confirmacion) return;
-
-    try {
-        const response = await api.delete(`/books/${id}`);
-        // Actualización local para que desaparezca de la tabla de inmediato
-        setBooks((prev) => prev.filter(b => b._id !== id));
-        alert(response.data.msg);
-        return true;
-    } catch (error: any) {
-        const mensaje = error.response?.data?.msg || "Error al eliminar";
-        alert(mensaje); // Aquí verás el aviso si el libro tiene préstamos
-        return false;
-    }
-};
+        try {
+            const response = await api.delete(`/books/${id}`);
+            setBooks((prev) => prev.filter(b => b._id !== id));
+            alert(response.data.msg);
+            return true;
+        } catch (error: any) {
+            const mensaje = error.response?.data?.msg || "Error al eliminar";
+            alert(mensaje);
+            return false;
+        }
+    };
 
     useEffect(() => {
         fetchBooks();
@@ -107,6 +115,8 @@ const deleteBook = async (id: string) => {
     return {
         books,
         loading,
+        isSemanticSearching,
+        searchSemantic,
         refetch: fetchBooks,
         addBook,
         deleteBook,
