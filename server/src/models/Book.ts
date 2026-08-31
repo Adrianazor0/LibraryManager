@@ -28,4 +28,6 @@ const bookSchema = new Schema<IBook>({
   }
 }, { timestamps: true });
 
+bookSchema.index({ title: 'text', description: 'text', author: 'text', category: 'text' });
+
 export default model<IBook>('Book', bookSchema);
