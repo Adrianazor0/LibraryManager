@@ -238,8 +238,8 @@ const sanitizeOcrText = (text: string): string => {
     if (!text) return '';
     return text
         .replace(/[\/\\|\[\]\{\}\*\^\~\@\_\#\$\%\&\<\>]/g, ' ')
-        .replace(/\b[b-zB-Z0-9]{1}\b/g, ' ')
-        .replace(/[^\w\sÁÉÍÓÚáéíóúÑñ]/gi, ' ')
+        .replace(/(^|\s)[a-zA-Z0-9](\s|$)/g, ' ') // Quitar solo caracteres aislados rodeados de espacios sin romper tildes
+        .replace(/[^\w\sÁÉÍÓÚáéíóúÑñÜü]/gi, ' ')
         .replace(/\s+/g, ' ')
         .trim();
 };
@@ -247,14 +247,50 @@ const sanitizeOcrText = (text: string): string => {
 export const scanBookOCR = async (req: Request, res: Response) => {
     try {
         const { image, textHint, rawOcrText } = req.body;
-        const rawInput = (rawOcrText || textHint || image || '');
+        const rawInput = (rawOcrText || textHint || image || '').trim();
         const cleanQuery = sanitizeOcrText(rawInput);
         const lowerInput = rawInput.toLowerCase();
 
         let extracted: any = null;
 
-        // RECONOCIMIENTO DIRECTO DE OBRAS CLÁSICAS CON TEXTO LIMPIO
-        if (lowerInput.includes("quijote") || lowerInput.includes("cervantes") || lowerInput.includes("mancha")) {
+        // 1. BÚSQUEDA PRIORITARIA EN EL ACERVO REAL DEL LICEO LA UREÑA (MongoDB)
+        if (cleanQuery && cleanQuery.length > 2) {
+            try {
+                const escapedQuery = cleanQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const words = cleanQuery.split(/\s+/).filter(w => w.length > 2);
+                
+                const localMatch = await Book.findOne({
+                    $or: [
+                        { title: { $regex: escapedQuery, $options: 'i' } },
+                        { author: { $regex: escapedQuery, $options: 'i' } },
+                        ...(words.length > 0 ? [{ title: { $regex: words[0], $options: 'i' } }] : [])
+                    ]
+                }).lean();
+
+                if (localMatch) {
+                    extracted = {
+                        title: localMatch.title,
+                        author: localMatch.author,
+                        isbn: localMatch.isbn,
+                        category: localMatch.category,
+                        section: localMatch.section || 'Biblioteca General',
+                        publisher: localMatch.publisher || 'Editorial Educativa',
+                        yearPublish: localMatch.yearPublish || 2024,
+                        edition: localMatch.edition || '1ra Edición',
+                        language: localMatch.language || 'Español',
+                        stockAvailable: localMatch.stockAvailable,
+                        stockTotal: localMatch.stockTotal || 3,
+                        description: localMatch.description || `Recurso registrado en el acervo del Liceo Vespertino La Ureña.`,
+                        location: localMatch.location || { shelf: "ESTANTE-1", level: "Nivel 1", callNumber: "BG-100" }
+                    };
+                }
+            } catch (dbErr) {
+                console.warn("Error en búsqueda local de libro OCR:", dbErr);
+            }
+        }
+
+        // 2. RECONOCIMIENTO DIRECTO DE OBRAS CLÁSICAS CON TEXTO LIMPIO
+        if (!extracted && (lowerInput.includes("quijote") || lowerInput.includes("cervantes") || lowerInput.includes("mancha"))) {
             extracted = {
                 title: "Don Quijote de la Mancha",
                 author: "Miguel de Cervantes Saavedra",
@@ -269,8 +305,8 @@ export const scanBookOCR = async (req: Request, res: Response) => {
                 description: "Obra cumbre de la literatura en lengua castellana y la primera novela moderna de la historia universal. Narra las aventuras del hidalgo Alonso Quijano, quien tras enloquecer leyendo libros de caballería, adopta el nombre de Don Quijote de la Mancha y recorre España junto a su escudero Sancho Panza.",
                 location: { shelf: "ESTANTE-A1", level: "Nivel 1", callNumber: "BG-863.32-C419" }
             };
-        } else if (cleanQuery && cleanQuery.length > 2) {
-            // 1. CONSULTA A API PÚBLICA DE GOOGLE BOOKS
+        } else if (!extracted && cleanQuery && cleanQuery.length > 2) {
+            // 3. CONSULTA A API PÚBLICA DE GOOGLE BOOKS
             try {
                 const apiRes = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(cleanQuery)}&maxResults=1&langRestrict=es`);
                 const data = await apiRes.json();
