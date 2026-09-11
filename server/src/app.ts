@@ -71,10 +71,16 @@ app.use((req, res) => {
   res.status(404).json({ msg: `Ruta no encontrada: ${req.method} ${req.url}` });
 });
 
+import { initSocket } from './socket';
+
 // Iniciar el servidor inmediatamente para pasar el health check de Cloud Run / Render
 const server = app.listen(PORT, () => {
     console.log(`>>> SERVER LIVE ON PORT ${PORT} <<<`);
     
+    // Inicializar WebSocket Socket.IO en tiempo real
+    initSocket(server);
+    console.log("⚡ Servidor Socket.IO listo para notificaciones en tiempo real");
+
     // Inicialización en segundo plano (DB y Semillas)
     connectDB().then(() => {
         console.log("Conectado a MongoDB Atlas");

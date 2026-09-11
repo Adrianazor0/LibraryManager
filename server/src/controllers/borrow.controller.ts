@@ -4,6 +4,7 @@ import Book from '../models/Book';
 import User from '../models/User';
 import LibraryPolicy from '../models/LibraryPolicy';
 import { logActivity } from '../utils/Logger';
+import { getIO } from '../socket';
 
 // Extensión de la interfaz para reconocer al usuario autenticado
 interface AuthRequest extends Request {
@@ -286,6 +287,26 @@ export const requestBorrow = async (req: Request, res: Response) => {
             `Solicitud de ${book.section} para el ${departureDate.toISOString().split('T')[0]} por ${requestedDays} días.`
         );
 
+        // Notificación en tiempo real a la Web (Bibliotecarios/Admins)
+        try {
+            const requestingUser = await User.findById(userId).select('name lastname enrollmentId');
+            const io = getIO();
+            if (io) {
+                io.to('admin_room').emit('new_borrow_request', {
+                    id: newBorrow._id,
+                    userName: requestingUser ? `${requestingUser.name} ${requestingUser.lastname}` : 'Estudiante',
+                    enrollmentId: requestingUser?.enrollmentId,
+                    bookTitle: book.title,
+                    author: book.author,
+                    requestedDays,
+                    createdAt: new Date().toISOString(),
+                    msg: `¡Nueva solicitud de préstamo de "${book.title}"!`
+                });
+            }
+        } catch (socketErr) {
+            console.error("Error al emitir socket de préstamo:", socketErr);
+        }
+
         res.status(201).json({ msg: "Solicitud enviada con éxito", newBorrow });
     } catch (error: any) {
         res.status(500).json({ msg: error.message });
@@ -376,6 +397,24 @@ export const approveBorrow = async (req: AuthRequest, res: Response) => {
             `Solicitud aprobada por ${req.user?.role}. Fecha entrega: ${borrow.dueDate.toISOString().split('T')[0]}`
         );
 
+        // Notificación en tiempo real a la App Móvil del estudiante
+        try {
+            const targetUserId = user._id ? user._id.toString() : user.toString();
+            const io = getIO();
+            if (io) {
+                io.to(`user_${targetUserId}`).emit('borrow_status_updated', {
+                    id: borrow._id,
+                    status: 'prestado',
+                    bookTitle: book.title,
+                    dueDate: borrow.dueDate,
+                    msg: `¡Tu solicitud para "${book.title}" ha sido APROBADA!`
+                });
+                io.to('admin_room').emit('borrow_request_handled', { id: borrow._id, status: 'prestado' });
+            }
+        } catch (socketErr) {
+            console.error("Error al emitir socket de aprobación:", socketErr);
+        }
+
         res.json({ msg: "Préstamo aprobado", borrow });
     } catch (error) {
         console.error(error);
@@ -386,7 +425,31 @@ export const approveBorrow = async (req: AuthRequest, res: Response) => {
 // Eliminar/Rechazar solicitud
 export const rejectBorrow = async (req: Request, res: Response) => {
     try {
-        await Borrow.findByIdAndDelete(req.params.id);
+        const borrow = await Borrow.findById(req.params.id).populate('bookId', 'title');
+        if (borrow) {
+            const targetUserId = borrow.userId ? borrow.userId.toString() : '';
+            const bookTitle = (borrow.bookId as any)?.title || 'Libro';
+
+            await Borrow.findByIdAndDelete(req.params.id);
+
+            try {
+                const io = getIO();
+                if (io && targetUserId) {
+                    io.to(`user_${targetUserId}`).emit('borrow_status_updated', {
+                        id: req.params.id,
+                        status: 'rechazado',
+                        bookTitle,
+                        msg: `Tu solicitud de préstamo para "${bookTitle}" fue rechazada.`
+                    });
+                    io.to('admin_room').emit('borrow_request_handled', { id: req.params.id, status: 'rechazado' });
+                }
+            } catch (socketErr) {
+                console.error("Error al emitir socket de rechazo:", socketErr);
+            }
+        } else {
+            await Borrow.findByIdAndDelete(req.params.id);
+        }
+
         res.json({ msg: "Solicitud rechazada y eliminada" });
     } catch (error) {
         res.status(500).json({ msg: "Error al rechazar" });
