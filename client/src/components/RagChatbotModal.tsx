@@ -35,11 +35,12 @@ export const RagChatbotModal: React.FC = () => {
     }
   }, [messages, isOpen]);
 
-  const handleSend = async (e?: React.FormEvent) => {
+  const handleSend = async (e?: React.FormEvent, customQuery?: string) => {
     if (e) e.preventDefault();
-    if (!inputMsg.trim() || isLoading) return;
+    const queryToUse = customQuery || inputMsg;
+    if (!queryToUse.trim() || isLoading) return;
 
-    const userText = inputMsg.trim();
+    const userText = queryToUse.trim();
     setInputMsg('');
 
     const userMsg: Message = {
@@ -188,24 +189,27 @@ export const RagChatbotModal: React.FC = () => {
 
           {/* SUGERENCIAS RÁPIDAS */}
           <div className="px-4 py-2 bg-indigo-50/50 border-t border-indigo-100/50 flex flex-wrap gap-1.5">
-            <span 
-              onClick={() => { setInputMsg('Recomiéndame libros de física para 5to'); }}
+            <button 
+              type="button"
+              onClick={() => handleSend(undefined, 'Recomiéndame libros de física para 5to')}
               className="text-[10px] font-bold bg-white text-indigo-700 hover:bg-indigo-600 hover:text-white px-2.5 py-1 rounded-full border border-indigo-200 cursor-pointer transition-all shadow-sm"
             >
               🔬 Libros de Física
-            </span>
-            <span 
-              onClick={() => { setInputMsg('¿Cuáles son las reglas de préstamo?'); }}
+            </button>
+            <button 
+              type="button"
+              onClick={() => handleSend(undefined, '¿Cuáles son las reglas de préstamo?')}
               className="text-[10px] font-bold bg-white text-purple-700 hover:bg-purple-600 hover:text-white px-2.5 py-1 rounded-full border border-purple-200 cursor-pointer transition-all shadow-sm"
             >
               📚 Horarios y Préstamos
-            </span>
-            <span 
-              onClick={() => { setInputMsg('¿Tienen cuentos de Juan Bosch o Pinocho?'); }}
+            </button>
+            <button 
+              type="button"
+              onClick={() => handleSend(undefined, '¿Tienen cuentos de Juan Bosch o Pinocho?')}
               className="text-[10px] font-bold bg-white text-emerald-700 hover:bg-emerald-600 hover:text-white px-2.5 py-1 rounded-full border border-emerald-200 cursor-pointer transition-all shadow-sm"
             >
               📖 Cuentos y Novelas
-            </span>
+            </button>
           </div>
 
           {/* INPUT FORM */}

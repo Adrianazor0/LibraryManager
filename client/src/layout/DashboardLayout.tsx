@@ -1,19 +1,55 @@
+import { useEffect, useState } from 'react';
 import { Outlet, Link } from 'react-router-dom';
+import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../store/useAuthStore';
 import UserProfileDropdown from '../components/UserProfileDropdown';
+import { NotificationToast, NotificationItem } from '../components/NotificationToast';
 import { 
   BookOpenIcon, 
   ArrowUpIcon, 
   UsersIcon, 
   ChartBarIcon, 
   HomeIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  BellIcon
 } from 'lucide-react'; 
 
 import { RagChatbotModal } from '../components/RagChatbotModal';
 
 const DashboardLayout = () => {
   const user = useAuthStore((state) => state.user);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+
+  useEffect(() => {
+    const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+    const socketUrl = rawApiUrl.replace(/\/api\/?$/, '');
+
+    const socket: Socket = io(socketUrl, {
+      transports: ['websocket', 'polling']
+    });
+
+    socket.on('connect', () => {
+      console.log('⚡ Conectado al servidor de notificaciones Socket.IO');
+      socket.emit('join_admin_room');
+    });
+
+    socket.on('new_borrow_request', (data: NotificationItem) => {
+      console.log('📱 Nueva solicitud de préstamo recibida vía Socket:', data);
+      setNotifications(prev => [data, ...prev]);
+    });
+
+    socket.on('borrow_request_handled', (data: { id: string }) => {
+      setNotifications(prev => prev.filter(n => n.id !== data.id));
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  const handleDismissNotification = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -32,6 +68,11 @@ const DashboardLayout = () => {
           </Link>
           <Link to="/dashboard/borrowsLanding" className="flex items-center p-3 hover:bg-blue-700 rounded-lg transition-colors">
             <ArrowUpIcon className="mr-3 w-5 h-5" /> Circulación (Préstamos)
+            {notifications.length > 0 && (
+              <span className="ml-auto bg-amber-400 text-indigo-950 font-black text-[10px] px-2 py-0.5 rounded-full animate-bounce">
+                {notifications.length}
+              </span>
+            )}
           </Link>
 
           {user?.role === 'admin' && (
@@ -71,6 +112,18 @@ const DashboardLayout = () => {
           </div>
           
           <div className="flex items-center space-x-4">
+            {/* Indicador de Notificaciones de Préstamos */}
+            <div className="relative">
+              <div className={`p-2 rounded-xl border transition-all ${notifications.length > 0 ? 'bg-amber-50 border-amber-200 text-amber-600' : 'bg-gray-50 border-gray-200 text-gray-400'}`}>
+                <BellIcon size={18} />
+                {notifications.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center animate-pulse">
+                    {notifications.length}
+                  </span>
+                )}
+              </div>
+            </div>
+
             <div className="text-right mr-2 hidden md:block">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-tight">Usuario Activo</p>
               <p className="text-sm font-bold text-blue-700">{user?.name}</p>
@@ -83,12 +136,14 @@ const DashboardLayout = () => {
           <Outlet />
         </div>
 
+        {/* TOASTS DE NOTIFICACIONES EN TIEMPO REAL */}
+        <NotificationToast notifications={notifications} onDismiss={handleDismissNotification} />
+
         {/* ASISTENTE CONVERSACIONAL RAG 24/7 */}
         <RagChatbotModal />
       </main>
     </div>
   );
 };
-
 
 export default DashboardLayout;
