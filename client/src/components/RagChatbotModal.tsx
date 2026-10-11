@@ -82,6 +82,35 @@ export const RagChatbotModal: React.FC = () => {
     }
   };
 
+  const [requestingBookId, setRequestingBookId] = useState<string | null>(null);
+
+  const handleRequestLoan = async (book: any) => {
+    try {
+      setRequestingBookId(book._id);
+      const today = new Date().toISOString().split('T')[0];
+      await api.post('/borrows/request', {
+        bookId: book._id,
+        daysBorrowed: 7,
+        startDate: today
+      });
+
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          sender: 'bot',
+          text: `🎉 **¡Solicitud Registrada con Éxito!**\n\nHe tramitado tu pedido de préstamo para **"${book.title}"** por un periodo de **7 días**. El personal bibliotecario del Liceo La Ureña revisará tu solicitud para entrega física.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
+    } catch (err: any) {
+      const errMsg = err.response?.data?.msg || "Inicia sesión o verifica tus permisos para solicitar préstamos.";
+      alert(`No se pudo procesar la solicitud: ${errMsg}`);
+    } finally {
+      setRequestingBookId(null);
+    }
+  };
+
   return (
     <div className="fixed bottom-6 right-6 z-[120]">
       {/* BOTÓN FLOTANTE */}
@@ -144,7 +173,7 @@ export const RagChatbotModal: React.FC = () => {
                     <div className="space-y-2 pt-2 border-t border-gray-100">
                       <span className="text-[10px] font-black text-indigo-600 uppercase tracking-wider block">Libros sugeridos en catálogo:</span>
                       {msg.suggestedBooks.map(b => (
-                        <div key={b._id} className="bg-indigo-50/60 p-3 rounded-xl border border-indigo-100/60 text-xs space-y-1">
+                        <div key={b._id} className="bg-indigo-50/60 p-3 rounded-xl border border-indigo-100/60 text-xs space-y-2">
                           <div className="flex items-center justify-between">
                             <span className="font-black text-gray-800">{b.title}</span>
                             <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-md ${b.stockAvailable > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -152,9 +181,25 @@ export const RagChatbotModal: React.FC = () => {
                             </span>
                           </div>
                           <p className="text-[11px] text-gray-500 font-medium">{b.author} • {b.category}</p>
-                          {b.location && (
-                            <p className="text-[10px] text-indigo-600 font-bold">📍 Estante {b.location.shelf}, Nivel {b.location.level}</p>
-                          )}
+                          
+                          <div className="flex items-center justify-between pt-1">
+                            {b.location ? (
+                              <p className="text-[10px] text-indigo-600 font-bold">📍 Estante {b.location.shelf}, Nivel {b.location.level}</p>
+                            ) : <span />}
+                            
+                            {b.stockAvailable > 0 ? (
+                              <button
+                                onClick={() => handleRequestLoan(b)}
+                                disabled={requestingBookId === b._id}
+                                className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-lg text-[10px] font-black transition-all flex items-center gap-1 shadow-sm"
+                              >
+                                <span>{requestingBookId === b._id ? "Solicitando..." : "Solicitar Préstamo"}</span>
+                                <SendIcon size={10} />
+                              </button>
+                            ) : (
+                              <span className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded">Agotado</span>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>

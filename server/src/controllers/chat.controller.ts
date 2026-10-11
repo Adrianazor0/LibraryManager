@@ -55,6 +55,8 @@ export const askLibraryBot = async (req: Request, res: Response) => {
         const isBosch = q.includes("bosch") || q.includes("mañosa") || q.includes("manosa");
         const isBaldor = q.includes("baldor");
         const isLordOfTheRings = q.includes("anillos") || q.includes("lord of the rings") || q.includes("tolkien") || q.includes("señor de los anillos");
+        const isOrwell = q.includes("1984") || q.includes("orwell");
+        const isZafon = q.includes("sombra del viento") || q.includes("zafon") || q.includes("zafón");
 
         let reply = "";
         let suggestedBooks: any[] = [];
@@ -152,8 +154,32 @@ export const askLibraryBot = async (req: Request, res: Response) => {
         else if (isPinocho) {
             const pinochoBooks = allBooks.filter(b => (b.title + " " + b.author).toLowerCase().includes("pinocho") || (b.title + " " + b.author).toLowerCase().includes("collodi"));
             if (pinochoBooks.length > 0) {
-                reply = `🧸 **Stock de Pinocho**:\n\nContamos con **${pinochoBooks[0].stockAvailable} ejemplares disponibles** de **"${pinochoBooks[0].title}"** de ${pinochoBooks[0].author} en la sección de ${pinochoBooks[0].section}.`;
+                reply = `🧸 **Stock de Pinocho**:\n\nContamos con **${pinochoBooks[0].stockAvailable} ejemplares disponibles** de **"${pinochoBooks[0].title}"** de ${pinochoBooks[0].author} en la sección de ${pinochoBooks[0].section}.\n\n¡Puedes solicitar tu préstamo de inmediato usando el botón aquí debajo!`;
                 suggestedBooks = pinochoBooks;
+            }
+        }
+        // CASO 8.1: Consulta Exclusiva sobre 1984 (George Orwell)
+        else if (isOrwell) {
+            const orwellBooks = allBooks.filter(b => (b.title + " " + b.author).toLowerCase().includes("1984") || (b.title + " " + b.author).toLowerCase().includes("orwell"));
+            if (orwellBooks.length > 0) {
+                reply = `👁️ **Stock de 1984 de George Orwell**:\n\nDisponemos de **${orwellBooks[0].stockAvailable} ejemplares disponibles** de **"${orwellBooks[0].title}"** en la sección de **${orwellBooks[0].section || 'Biblioteca General'}** (Estante ${orwellBooks[0].location?.shelf || 'ESTANTE-D4'}).\n\nPuedes tramitar tu solicitud de préstamo con el botón adjunto:`;
+                suggestedBooks = orwellBooks;
+            }
+        }
+        // CASO 8.2: Consulta Exclusiva sobre La Sombra del Viento (Carlos Ruiz Zafón)
+        else if (isZafon) {
+            const zafonBooks = allBooks.filter(b => (b.title + " " + b.author).toLowerCase().includes("sombra del viento") || (b.title + " " + b.author).toLowerCase().includes("zafon") || (b.title + " " + b.author).toLowerCase().includes("zafón"));
+            if (zafonBooks.length > 0) {
+                reply = `💨 **Stock de La Sombra del Viento (Carlos Ruiz Zafón)**:\n\nContamos con **${zafonBooks[0].stockAvailable} ejemplares disponibles** de **"${zafonBooks[0].title}"** en la sección de **${zafonBooks[0].section || 'Biblioteca General'}** (Estante ${zafonBooks[0].location?.shelf || 'ESTANTE-Z1'}).\n\n¡Haz clic en el botón de préstamo para reservarlo!`;
+                suggestedBooks = zafonBooks;
+            }
+        }
+        // CASO 8.3: Consulta Exclusiva sobre Don Quijote
+        else if (isQuijote) {
+            const quijoteBooks = allBooks.filter(b => (b.title + " " + b.author).toLowerCase().includes("quijote") || (b.title + " " + b.author).toLowerCase().includes("cervantes"));
+            if (quijoteBooks.length > 0) {
+                reply = `🛡️ **Stock de Don Quijote de la Mancha**:\n\nContamos con **${quijoteBooks[0].stockAvailable} ejemplares disponibles** de **"${quijoteBooks[0].title}"** de ${quijoteBooks[0].author} en la sección de ${quijoteBooks[0].section}.\n\nPuedes solicitar el préstamo del ejemplar a continuación:`;
+                suggestedBooks = quijoteBooks;
             }
         }
         // CASO 9: Consulta Exclusiva sobre Diccionario de Dominicanismos
