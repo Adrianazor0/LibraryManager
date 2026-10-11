@@ -290,6 +290,19 @@ export const scanBookOCR = async (req: Request, res: Response) => {
         }
 
         // 2. RECONOCIMIENTO DIRECTO DE OBRAS CLÁSICAS CON TEXTO LIMPIO
+        const isLotr = 
+            lowerInput.includes("anillos") ||
+            lowerInput.includes("anillo") ||
+            lowerInput.includes("tolkien") ||
+            lowerInput.includes("lord of the rings") ||
+            lowerInput.includes("señor de los") ||
+            lowerInput.includes("senor de los") ||
+            lowerInput.includes("comunidad del anillo") ||
+            lowerInput.includes("retorno del rey") ||
+            lowerInput.includes("dos torres") ||
+            lowerInput.includes("frodo") ||
+            lowerInput.includes("sauron");
+
         if (!extracted && (lowerInput.includes("quijote") || lowerInput.includes("cervantes") || lowerInput.includes("mancha"))) {
             extracted = {
                 title: "Don Quijote de la Mancha",
@@ -305,10 +318,28 @@ export const scanBookOCR = async (req: Request, res: Response) => {
                 description: "Obra cumbre de la literatura en lengua castellana y la primera novela moderna de la historia universal. Narra las aventuras del hidalgo Alonso Quijano, quien tras enloquecer leyendo libros de caballería, adopta el nombre de Don Quijote de la Mancha y recorre España junto a su escudero Sancho Panza.",
                 location: { shelf: "ESTANTE-A1", level: "Nivel 1", callNumber: "BG-863.32-C419" }
             };
+        } else if (!extracted && isLotr) {
+            extracted = {
+                title: "El Señor de los Anillos: La Comunidad del Anillo",
+                author: "J.R.R. Tolkien",
+                isbn: "978-8445071793",
+                category: "Fantasía Épica / Novela",
+                section: "Biblioteca General",
+                publisher: "Ediciones Minotauro",
+                yearPublish: 1954,
+                edition: "Edición Conmemorativa",
+                language: "Español",
+                stockTotal: 4,
+                stockAvailable: 4,
+                description: "Obra cumbre de la literatura fantástica universal escrita por J.R.R. Tolkien. En la legendaria Tierra Media, el joven hobbit Frodo Bolsón emprende una peligrosa travesía hacia el Monte del Destino para destruir el Anillo Único antes de que el Señor Oscuro Sauron someta a todos los pueblos libres.",
+                location: { shelf: "ESTANTE-L3", level: "Nivel 2", callNumber: "BG-823.91-T649" }
+            };
         } else if (!extracted && cleanQuery && cleanQuery.length > 2) {
-            // 3. CONSULTA A API PÚBLICA DE GOOGLE BOOKS
+            // 3. CONSULTA A API PÚBLICA DE GOOGLE BOOKS (con truncado inteligente de palabras para evitar fallos por ruido OCR)
             try {
-                const apiRes = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(cleanQuery)}&maxResults=1&langRestrict=es`);
+                const words = cleanQuery.split(' ').filter(w => w.length > 2);
+                const queryTerm = words.slice(0, 4).join(' ') || cleanQuery;
+                const apiRes = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(queryTerm)}&maxResults=1&langRestrict=es`);
                 const data = await apiRes.json();
 
                 if (data.items && data.items.length > 0) {

@@ -31,12 +31,13 @@ const InventoryPage = () => {
     try {
       // 1. Escaneo OCR directo de los píxeles de la imagen con Tesseract.js
       const result = await Tesseract.recognize(file, 'spa+eng');
-      const recognizedText = result.data.text || file.name;
+      const recognizedText = (result.data.text || '').trim();
+      const combinedHint = `${file.name.replace(/\.[^/.]+$/, '').replace(/[-_]+/g, ' ')} ${recognizedText}`.trim();
 
       // 2. Enviar el texto escaneado a la API Webhook de catalogación
       const response = await api.post('/books/ocr-scan', { 
-        rawOcrText: recognizedText,
-        textHint: file.name 
+        rawOcrText: recognizedText || file.name,
+        textHint: combinedHint || file.name 
       });
 
       if (response.data.success && response.data.extractedFields) {
@@ -71,7 +72,7 @@ const InventoryPage = () => {
     setIsOcrScanning(true);
     setOcrSuccessMsg('');
     try {
-      const response = await api.post('/books/ocr-scan', { textHint: sampleHint || 'fisica' });
+      const response = await api.post('/books/ocr-scan', { textHint: sampleHint || 'El Señor de los Anillos' });
       if (response.data.success && response.data.extractedFields) {
         const ext = response.data.extractedFields;
         setFormData(prev => ({

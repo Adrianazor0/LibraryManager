@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import * as bcrypt from 'bcryptjs';
 import { IUser } from '../interfaces/models.interface';
 import User from '../models/User';
 
@@ -48,8 +49,11 @@ export const updateUser = async (req: Request, res: Response) => {
     delete updateData._id;
 
     // 2. Manejo de contraseña (opcional)
-    // Si el campo password viene vacío, lo eliminamos para no borrar la clave actual
-    if (!updateData.password || updateData.password.trim() === "") {
+    // Si el campo password viene con un valor, lo encriptamos antes de guardar en la DB
+    if (updateData.password && updateData.password.trim() !== "") {
+      const salt = await bcrypt.genSalt(10);
+      updateData.password = await bcrypt.hash(updateData.password.trim(), salt);
+    } else {
       delete updateData.password;
     }
 

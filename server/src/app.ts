@@ -15,6 +15,7 @@ import report from './routes/report.routes';
 import policyRoutes from './routes/policy.routes';
 import chatRoutes from './routes/chat.routes';
 import { seedPolicies } from './models/LibraryPolicy';
+import { seedBooks } from './models/Book';
 
 // Cargar variables de entorno lo antes posible
 dotenv.config();
@@ -82,11 +83,12 @@ const server = app.listen(PORT, () => {
     console.log("⚡ Servidor Socket.IO listo para notificaciones en tiempo real");
 
     // Inicialización en segundo plano (DB y Semillas)
-    connectDB().then(() => {
+    connectDB().then(async () => {
         console.log("Conectado a MongoDB Atlas");
-        return seedPolicies();
+        await seedPolicies();
+        await seedBooks();
     }).then(() => {
-        console.log("Políticas verificadas/inicializadas");
+        console.log("Políticas y recursos de catálogo verificados/inicializados");
     }).catch(error => {
         console.error("Error durante la inicialización en segundo plano:", error);
     });
