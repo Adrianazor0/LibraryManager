@@ -24,3 +24,6 @@ Thumbs.db
 
 # Archivos de cobertura de tests
 coverage/
+
+# Tesseract trained data
+*.traineddata
