@@ -293,12 +293,16 @@ export const scanBookOCR = async (req: Request, res: Response) => {
             lowerInput.includes("50th") ||
             lowerInput.includes("anniversary") ||
             lowerInput.includes("harpercollins") ||
-            lowerInput.includes("houghton");
+            lowerInput.includes("houghton") ||
+            lowerInput.includes("wbs") ||
+            lowerInput.includes("rain wbs") ||
+            lowerInput.includes("pi tion");
 
         // CASO B: 1984 de George Orwell
         const isOrwell = 
             lowerInput.includes("1984") || 
             lowerInput.includes("orwell") ||
+            lowerInput.includes("orvell") ||
             (lowerInput.includes("george") && (lowerInput.includes("ii") || lowerInput.includes("al")));
 
         // CASO C: La Sombra del Viento de Carlos Ruiz Zafón
